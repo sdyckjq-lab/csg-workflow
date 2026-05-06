@@ -28,6 +28,10 @@ apply_rule_block = load_module(
     ROOT / "skills/csg-workflow/scripts/apply_rule_block.py",
     "apply_rule_block",
 )
+check_deps = load_module(
+    ROOT / "skills/csg-workflow/scripts/check_dependencies.py",
+    "check_dependencies",
+)
 
 
 class ValidatePackageTest(unittest.TestCase):
@@ -143,6 +147,268 @@ class ApplyRuleBlockTest(unittest.TestCase):
 
             with self.assertRaises(apply_rule_block.RuleBlockError):
                 apply_rule_block.apply_rule_block(target, template, write=True)
+
+
+class CheckDependenciesTest(unittest.TestCase):
+    def _make_plugins_json(self, home: Path, data: dict) -> Path:
+        plugins_dir = home / ".claude" / "plugins"
+        plugins_dir.mkdir(parents=True)
+        path = plugins_dir / "installed_plugins.json"
+        path.write_text(check_deps.json.dumps(data), encoding="utf-8")
+        return path
+
+    def _make_gstack(self, home: Path) -> None:
+        skill_dir = home / ".claude" / "skills" / "gstack"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# Gstack\n", encoding="utf-8")
+
+    def test_all_installed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+                "superpowers@claude-plugins-official": [{"version": "5.1.0"}],
+            }})
+            self._make_gstack(home)
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("installed", results["compound"]["status"])
+        self.assertEqual("installed", results["superpowers"]["status"])
+        self.assertEqual("installed", results["gstack"]["status"])
+
+    def test_all_installed_exit_code_0(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+                "superpowers@claude-plugins-official": [{"version": "5.1.0"}],
+            }})
+            self._make_gstack(home)
+
+            code = check_deps.main(["--home", str(home)])
+
+        self.assertEqual(0, code)
+
+    def test_nothing_installed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            results = check_deps.check_dependencies(Path(tmp))
+
+        self.assertEqual("missing", results["compound"]["status"])
+        self.assertEqual("missing", results["superpowers"]["status"])
+        self.assertEqual("missing", results["gstack"]["status"])
+
+    def test_nothing_installed_exit_code_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code = check_deps.main(["--home", str(tmp)])
+
+        self.assertEqual(1, code)
+
+    def test_partial_install_only_compound(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("installed", results["compound"]["status"])
+        self.assertEqual("missing", results["superpowers"]["status"])
+        self.assertEqual("missing", results["gstack"]["status"])
+
+    def test_plugins_json_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            results = check_deps.check_dependencies(Path(tmp))
+
+        self.assertEqual("missing", results["compound"]["status"])
+        self.assertEqual("missing", results["superpowers"]["status"])
+
+    def test_plugins_json_malformed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            (plugins_dir / "installed_plugins.json").write_text("not valid json {{{", encoding="utf-8")
+
+            with self.assertRaises(ValueError):
+                check_deps.check_dependencies(home)
+
+    def test_plugins_json_malformed_exit_code_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            (plugins_dir / "installed_plugins.json").write_text("not valid json {{{", encoding="utf-8")
+
+            code = check_deps.main(["--home", str(home)])
+
+        self.assertEqual(2, code)
+
+    def test_gstack_dir_without_skill_md(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude" / "skills" / "gstack").mkdir(parents=True)
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["gstack"]["status"])
+
+    def test_empty_home_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            results = check_deps.check_dependencies(Path(tmp))
+            code = check_deps.main(["--home", str(tmp)])
+
+        for name in ("compound", "superpowers", "gstack"):
+            self.assertEqual("missing", results[name]["status"])
+        self.assertEqual(1, code)
+
+    def test_version_values_are_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+                "superpowers@claude-plugins-official": [{"version": "5.1.0"}],
+            }})
+            self._make_gstack(home)
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("3.0.1", results["compound"]["version"])
+        self.assertEqual("5.1.0", results["superpowers"]["version"])
+
+    def test_plugins_json_unicode_decode_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            (plugins_dir / "installed_plugins.json").write_bytes(b"\x80\x81\x82\x83")
+
+            with self.assertRaises(ValueError):
+                check_deps.check_dependencies(home)
+
+    def test_plugins_key_not_a_dict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": "not a dict"})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+        self.assertEqual("missing", results["superpowers"]["status"])
+
+    def test_plugin_entry_not_a_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": "not a list",
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugin_entry_empty_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugin_entry_non_dict_element(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [42],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugins_json_permission_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            path = plugins_dir / "installed_plugins.json"
+            path.write_text("{}", encoding="utf-8")
+            path.chmod(0o000)
+
+            with self.assertRaises(ValueError):
+                check_deps.check_dependencies(home)
+
+            path.chmod(0o644)
+
+    def test_plugin_entry_missing_version_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"other": "data"}],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("installed", results["compound"]["status"])
+        self.assertEqual("unknown", results["compound"]["version"])
+
+    def test_human_readable_output_all_installed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+                "superpowers@claude-plugins-official": [{"version": "5.1.0"}],
+            }})
+            self._make_gstack(home)
+
+            import io
+            from contextlib import redirect_stdout
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                check_deps.main(["--home", str(home)])
+
+            output = buf.getvalue()
+
+        self.assertIn("compound: installed (v3.0.1)", output)
+        self.assertIn("superpowers: installed (v5.1.0)", output)
+        self.assertIn("gstack: installed", output)
+
+    def test_human_readable_output_missing_plugins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            import io
+            from contextlib import redirect_stdout
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                check_deps.main(["--home", str(tmp)])
+
+            output = buf.getvalue()
+
+        self.assertIn("compound: missing", output)
+        self.assertIn("superpowers: missing", output)
+        self.assertIn("gstack: missing", output)
+
+    def test_json_output_is_valid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+            }})
+
+            import io
+            from contextlib import redirect_stdout
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                check_deps.main(["--home", str(home), "--json"])
+
+            parsed = check_deps.json.loads(buf.getvalue())
+
+        self.assertEqual("installed", parsed["compound"]["status"])
+        self.assertEqual("missing", parsed["superpowers"]["status"])
+        self.assertEqual("missing", parsed["gstack"]["status"])
 
 
 if __name__ == "__main__":

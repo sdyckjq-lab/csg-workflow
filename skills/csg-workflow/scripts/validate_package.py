@@ -24,6 +24,8 @@ REQUIRED_FILES = [
     "skills/csg-workflow/assets/templates/workflow/log.md",
     "skills/csg-workflow/scripts/apply_rule_block.py",
     "skills/csg-workflow/scripts/validate_package.py",
+    "skills/csg-workflow/scripts/check_dependencies.py",
+    "skills/csg-workflow/references/dependency-setup.md",
     "examples/minimal-project/README.md",
     "examples/minimal-project/docs/workflow/state.md",
     "examples/minimal-project/docs/workflow/decisions.md",
@@ -144,6 +146,16 @@ def validate(root: Path) -> list[str]:
     if license_path.is_file() and "MIT License" not in read_text(license_path):
         issues.append("LICENSE: expected MIT License text")
 
+    deps_ref_path = root / "skills/csg-workflow/references/dependency-setup.md"
+    if deps_ref_path.is_file():
+        deps_text = read_text(deps_ref_path)
+        require_contains(
+            issues,
+            deps_text,
+            "skills/csg-workflow/references/dependency-setup.md",
+            ["compound-engineering", "superpowers@claude-plugins-official", "gstack", "git clone"],
+        )
+
     for rel in [
         "skills/csg-workflow/assets/templates/AGENTS.md.block",
         "skills/csg-workflow/assets/templates/CLAUDE.md.block",
@@ -167,7 +179,7 @@ def validate(root: Path) -> list[str]:
                 issues,
                 text,
                 rel,
-                ["当前阶段", "项目目标", "当前主要文档", "下一步", "阻塞问题", "最近验证", "不要重复讨论"],
+                ["当前阶段", "项目目标", "当前主要文档", "下一步", "阻塞问题", "最近验证", "不要重复讨论", "依赖状态"],
             )
 
     for rel in [
