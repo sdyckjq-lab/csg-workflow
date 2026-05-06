@@ -30,7 +30,8 @@ V1 does not:
 
 1. Read project rules when present: `AGENTS.md` for Codex, `CLAUDE.md` for Claude Code.
 2. Read `docs/workflow/state.md` when it exists.
-3. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
+3. If state.md has no dependency check record, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
+4. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
 4. Determine the current stage. If unclear, read `references/stage-router.md`.
 5. Recommend one next Skill, optional alternatives, and Skills to avoid right now.
 6. Explain the recommendation in simple language.
@@ -52,6 +53,7 @@ If a Skill is unavailable, do not pretend to use it and do not install it automa
 - Use `references/handoff-state.md` to create or update `state.md`, `decisions.md`, and `log.md`.
 - Use `references/project-rules.md` before touching `AGENTS.md` or `CLAUDE.md`.
 - Use `references/missing-skills.md` when Compound, Superpowers, or Gstack capabilities are missing.
+- Use `references/dependency-setup.md` to check dependencies, install missing plugins, or update installed plugins.
 
 ## Safety Rules
 

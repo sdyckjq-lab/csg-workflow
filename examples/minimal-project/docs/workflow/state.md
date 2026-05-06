@@ -37,3 +37,10 @@ Use `ce-brainstorm` to create a short requirements document.
 ## 不要重复讨论
 
 - Do not start coding before requirements exist.
+
+## 依赖状态
+
+最后检查: Not recorded yet.
+compound: Not recorded yet.
+superpowers: Not recorded yet.
+gstack: Not recorded yet.

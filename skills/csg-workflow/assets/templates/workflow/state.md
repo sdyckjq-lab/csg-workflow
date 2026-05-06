@@ -35,3 +35,10 @@ Create or update requirements, then route to the next Skill.
 ## 不要重复讨论
 
 - None recorded yet.
+
+## 依赖状态
+
+最后检查: Not recorded yet.
+compound: Not recorded yet.
+superpowers: Not recorded yet.
+gstack: Not recorded yet.
