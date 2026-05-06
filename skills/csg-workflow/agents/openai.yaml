@@ -1,0 +1,6 @@
+interface:
+  display_name: "CSG Workflow"
+  short_description: "Route AI coding projects across Skills"
+  default_prompt: "Use $csg-workflow to identify the current project stage and recommend the next Skill."
+policy:
+  allow_implicit_invocation: true

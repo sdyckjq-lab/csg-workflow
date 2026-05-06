@@ -1,0 +1,15 @@
+<!-- BEGIN CSG-WORKFLOW RULES -->
+## CSG Workflow
+
+本段由 `csg-workflow` 建议添加，只负责项目阶段交接。它不替代本文件里已有的项目规则。
+
+如果本段和本文件其他规则冲突，优先遵守本文件其他项目规则，除非用户明确要求修改。
+
+- 非简单任务开始前，先读 `docs/workflow/state.md`。
+- 默认按 `state.md` 的下一步继续，除非用户明确改方向。
+- 不要重新推翻已确认决定，除非 `state.md` 写明需要回退。
+- 阶段结束后，更新 `docs/workflow/state.md`。
+- 长期决定写入 `docs/workflow/decisions.md`。
+- 阶段记录追加到 `docs/workflow/log.md`。
+- 详细流程和 Skill 选择规则不要写在这里，去读 `csg-workflow` Skill 文档。
+<!-- END CSG-WORKFLOW RULES -->

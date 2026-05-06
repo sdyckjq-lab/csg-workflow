@@ -1,0 +1,14 @@
+<!-- BEGIN CSG-WORKFLOW RULES -->
+## CSG Workflow
+
+This block is suggested by `csg-workflow` for Codex project handoff. It does not replace the other rules in this file.
+
+If this block conflicts with another project rule in `AGENTS.md`, follow the other project rule unless the user explicitly changes it.
+
+- For non-trivial tasks, read `docs/workflow/state.md` before starting.
+- Continue from the next action in `state.md` unless the user changes direction.
+- Do not reopen recorded decisions unless `state.md` says to roll back.
+- At stage end, update `docs/workflow/state.md`.
+- Put durable decisions in `docs/workflow/decisions.md`.
+- Append stage history to `docs/workflow/log.md`.
+<!-- END CSG-WORKFLOW RULES -->
