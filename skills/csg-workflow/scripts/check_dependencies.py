@@ -25,6 +25,8 @@ def check_plugins_json(plugins_path: Path) -> dict[str, dict[str, str]]:
         raise ValueError("installed_plugins.json is malformed")
 
     plugins = data.get("plugins", {}) if isinstance(data, dict) else {}
+    if not isinstance(plugins, dict):
+        plugins = {}
 
     for name, key in [("compound", COMPOUND_KEY), ("superpowers", SUPERPOWERS_KEY)]:
         entries = plugins.get(key)

@@ -32,11 +32,11 @@ V1 does not:
 2. Read `docs/workflow/state.md` when it exists.
 3. If state.md has no dependency check record, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
 4. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
-4. Determine the current stage. If unclear, read `references/stage-router.md`.
-5. Recommend one next Skill, optional alternatives, and Skills to avoid right now.
-6. Explain the recommendation in simple language.
-7. Ask the user before invoking or routing into the next Skill.
-8. At stage end, update `state.md`; put long-term decisions in `decisions.md`; append history to `log.md`.
+5. Determine the current stage. If unclear, read `references/stage-router.md`.
+6. Recommend one next Skill, optional alternatives, and Skills to avoid right now.
+7. Explain the recommendation in simple language.
+8. Ask the user before invoking or routing into the next Skill.
+9. At stage end, update `state.md`; put long-term decisions in `decisions.md`; append history to `log.md`.
 
 ## CSG Role Split
 

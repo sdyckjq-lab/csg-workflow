@@ -263,7 +263,75 @@ class CheckDependenciesTest(unittest.TestCase):
             self.assertEqual("missing", results[name]["status"])
         self.assertEqual(1, code)
 
-    def test_human_readable_output_format(self):
+    def test_version_values_are_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"version": "3.0.1"}],
+                "superpowers@claude-plugins-official": [{"version": "5.1.0"}],
+            }})
+            self._make_gstack(home)
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("3.0.1", results["compound"]["version"])
+        self.assertEqual("5.1.0", results["superpowers"]["version"])
+
+    def test_plugins_json_unicode_decode_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            (plugins_dir / "installed_plugins.json").write_bytes(b"\x80\x81\x82\x83")
+
+            with self.assertRaises(ValueError):
+                check_deps.check_dependencies(home)
+
+    def test_plugins_key_not_a_dict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": "not a dict"})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+        self.assertEqual("missing", results["superpowers"]["status"])
+
+    def test_plugin_entry_not_a_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": "not a list",
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugin_entry_empty_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugin_entry_missing_version_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [{"other": "data"}],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("installed", results["compound"]["status"])
+        self.assertEqual("unknown", results["compound"]["version"])
+
+    def test_human_readable_output_all_installed(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             self._make_plugins_json(home, {"plugins": {
@@ -280,9 +348,23 @@ class CheckDependenciesTest(unittest.TestCase):
 
             output = buf.getvalue()
 
-        self.assertIn("compound: installed", output)
-        self.assertIn("superpowers: installed", output)
+        self.assertIn("compound: installed (v3.0.1)", output)
+        self.assertIn("superpowers: installed (v5.1.0)", output)
         self.assertIn("gstack: installed", output)
+
+    def test_human_readable_output_missing_plugins(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            import io
+            from contextlib import redirect_stdout
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                check_deps.main(["--home", str(tmp)])
+
+            output = buf.getvalue()
+
+        self.assertIn("compound: missing", output)
+        self.assertIn("superpowers: missing", output)
+        self.assertIn("gstack: missing", output)
 
     def test_json_output_is_valid(self):
         with tempfile.TemporaryDirectory() as tmp:
