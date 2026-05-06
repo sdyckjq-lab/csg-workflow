@@ -101,3 +101,14 @@ Expected:
 
 - First screen explains CSG, target user, install path, V1 boundary, dependency expectations, missing-Skill fallback, license, and minimum example.
 - It is clear this Skill does not replace Compound, Superpowers, or Gstack.
+
+## AE11: Command Args Routing Intercept
+
+Input: `/csg-workflow 我想加一个功能...如何设计？`
+
+Expected:
+
+- The Skill treats the appended command-args as routing context, not as a direct design task.
+- The Skill reads project rules and `docs/workflow/state.md` before answering the embedded request.
+- The Skill determines the current stage and recommends one next Skill before any research, design, implementation, or Agent call.
+- The Skill asks before invoking or routing into the next Skill.
