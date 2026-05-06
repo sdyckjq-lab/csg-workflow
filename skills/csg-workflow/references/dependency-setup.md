@@ -4,9 +4,9 @@ Use this file when csg-workflow runs for the first time, or when the user asks t
 
 ## When to Check
 
-- First run: `docs/workflow/state.md` exists but has no dependency check record (no `## 依赖状态` section).
+- First run: `docs/workflow/state.md` has no `## 依赖状态` section, or `最后检查` is `Not recorded yet`.
 - User explicitly asks to check, install, or update dependencies.
-- Do not check on every run. If state.md already has a dependency section, trust it unless the user requests a re-check.
+- Do not check on every run. If state.md already has a dependency section with real data, trust it unless the user requests a re-check.
 
 ## How to Check
 
@@ -57,7 +57,7 @@ Only update when the check result changes or on first check.
 
 ## Safety Rules
 
-- Never install or update without explicit user confirmation.
+- Do not auto-install. Only show the commands and wait for the user to confirm. This is consistent with `references/missing-skills.md`.
 - Never auto-detect new versions or check for updates in the background.
 - If `claude plugin install` fails, report the error and suggest the user check their Claude Code authentication.
 - If `git clone` for Gstack fails, suggest checking network connectivity and disk space.

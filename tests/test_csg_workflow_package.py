@@ -319,6 +319,31 @@ class CheckDependenciesTest(unittest.TestCase):
 
         self.assertEqual("missing", results["compound"]["status"])
 
+    def test_plugin_entry_non_dict_element(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            self._make_plugins_json(home, {"plugins": {
+                "compound-engineering@compound-engineering-plugin": [42],
+            }})
+
+            results = check_deps.check_dependencies(home)
+
+        self.assertEqual("missing", results["compound"]["status"])
+
+    def test_plugins_json_permission_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            plugins_dir = home / ".claude" / "plugins"
+            plugins_dir.mkdir(parents=True)
+            path = plugins_dir / "installed_plugins.json"
+            path.write_text("{}", encoding="utf-8")
+            path.chmod(0o000)
+
+            with self.assertRaises(ValueError):
+                check_deps.check_dependencies(home)
+
+            path.chmod(0o644)
+
     def test_plugin_entry_missing_version_key(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)

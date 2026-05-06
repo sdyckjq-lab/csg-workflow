@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 COMPOUND_KEY = "compound-engineering@compound-engineering-plugin"
@@ -21,7 +22,7 @@ def check_plugins_json(plugins_path: Path) -> dict[str, dict[str, str]]:
 
     try:
         data = json.loads(plugins_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except (json.JSONDecodeError, UnicodeDecodeError, PermissionError):
         raise ValueError("installed_plugins.json is malformed")
 
     plugins = data.get("plugins", {}) if isinstance(data, dict) else {}
@@ -30,7 +31,7 @@ def check_plugins_json(plugins_path: Path) -> dict[str, dict[str, str]]:
 
     for name, key in [("compound", COMPOUND_KEY), ("superpowers", SUPERPOWERS_KEY)]:
         entries = plugins.get(key)
-        if isinstance(entries, list) and entries:
+        if isinstance(entries, list) and entries and isinstance(entries[0], dict):
             version = entries[0].get("version", "unknown")
             results[name] = {"status": "installed", "version": version, "source": "installed_plugins.json"}
         else:
@@ -81,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         results = check_dependencies(home)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        print(f"Error: {exc}", file=sys.stderr)
         return 2
 
     if args.json:

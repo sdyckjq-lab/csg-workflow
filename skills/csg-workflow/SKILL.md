@@ -30,8 +30,8 @@ V1 does not:
 
 1. Read project rules when present: `AGENTS.md` for Codex, `CLAUDE.md` for Claude Code.
 2. Read `docs/workflow/state.md` when it exists.
-3. If state.md has no dependency check record, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
-4. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
+3. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
+4. If state.md has no `## 依赖状态` section, or if `最后检查` is `Not recorded yet`, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
 5. Determine the current stage. If unclear, read `references/stage-router.md`.
 6. Recommend one next Skill, optional alternatives, and Skills to avoid right now.
 7. Explain the recommendation in simple language.
