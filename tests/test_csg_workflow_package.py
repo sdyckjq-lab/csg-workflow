@@ -39,6 +39,37 @@ class ValidatePackageTest(unittest.TestCase):
         issues = validate_package.validate(ROOT)
         self.assertEqual([], issues)
 
+    def test_skill_routing_intercept_precedes_v1_guidance(self):
+        skill_text = (ROOT / "skills/csg-workflow/SKILL.md").read_text(encoding="utf-8")
+        intercept_start = skill_text.index("## 强制路由")
+        v1_boundary_start = skill_text.index("## V1 Boundary")
+        intercept = skill_text[intercept_start:v1_boundary_start]
+
+        self.assertLess(intercept_start, v1_boundary_start)
+        self.assertIn("你只做路由", intercept)
+        self.assertIn("Ask the user before invoking or routing into the next Skill", intercept)
+        self.assertIn("将 command-args 当作直接任务来回应", intercept)
+        self.assertIn("启动调研、设计、实现", intercept)
+        self.assertIn("调用 Agent 或其他工具", intercept)
+
+    def test_skill_start_here_is_replaced_by_post_routing_guidance(self):
+        skill_text = (ROOT / "skills/csg-workflow/SKILL.md").read_text(encoding="utf-8")
+
+        self.assertNotIn("## Start Here", skill_text)
+        self.assertIn("## 路由完成后", skill_text)
+        self.assertIn("阶段结束时，更新 `state.md`", skill_text)
+
+    def test_pressure_scenarios_include_command_args_intercept(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        ae11_start = scenarios.index("## AE11: Command Args Routing Intercept")
+        ae11 = scenarios[ae11_start:]
+
+        self.assertIn("`/csg-workflow 我想加一个功能...如何设计？`", ae11)
+        self.assertIn("routing context, not as a direct design task", ae11)
+        self.assertIn("reads project rules and `docs/workflow/state.md`", ae11)
+        self.assertIn("before any research, design, implementation, or Agent call", ae11)
+        self.assertIn("asks before invoking or routing into the next Skill", ae11)
+
     def test_missing_skill_description_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
