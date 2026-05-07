@@ -109,6 +109,8 @@ REQUIRED_CARD_FIELDS = [
     "routing_trace",
 ]
 
+NESTED_MAP_FIELDS = frozenset({"state_updates_on_confirm", "state_updates_after_success", "rendering"})
+
 REQUIRED_STATE_UPDATE_KEYS = {"status", "active_card", "current_stage", "current_skill", "resume_action"}
 REQUIRED_SUCCESS_KEYS = {"status", "current_stage", "last_completed_card", "next_checkpoint"}
 
@@ -228,7 +230,7 @@ def parse_card_blocks(text: str) -> list[dict[str, str | list[str | dict[str, st
         # key: (start of list or nested map)
         if stripped.endswith(":"):
             k = stripped[:-1]
-            if k in ("state_updates_on_confirm", "state_updates_after_success", "rendering"):
+            if k in NESTED_MAP_FIELDS:
                 current[k] = []
                 current_map_key = k
             else:
@@ -243,12 +245,12 @@ def parse_card_blocks(text: str) -> list[dict[str, str | list[str | dict[str, st
     return cards
 
 
-def validate_cards(issues: list[str], text: str, path: str) -> list[str]:
-    """Validate all next-step-card blocks in text. Return list of card IDs found."""
+def validate_cards(issues: list[str], text: str, path: str) -> tuple[list[str], list[dict]]:
+    """Validate all next-step-card blocks in text. Return (card_ids, cards)."""
     cards = parse_card_blocks(text)
     if not cards:
         issues.append(f"{path}: missing_card_block — no next-step-card blocks found")
-        return []
+        return [], []
 
     card_ids: list[str] = []
     seen_ids: set[str] = set()
@@ -351,7 +353,7 @@ def validate_cards(issues: list[str], text: str, path: str) -> list[str]:
             if not has_markdown:
                 issues.append(f"{path}: missing_nested_key — card '{card_id}' rendering missing 'markdown'. Fix: add 'markdown: required'.")
 
-    return card_ids
+    return card_ids, cards
 
 
 def validate_navigator(issues: list[str], root: Path) -> None:
@@ -395,12 +397,10 @@ def validate_navigator(issues: list[str], root: Path) -> None:
         require_contains(issues, text, "references/navigator/next-step-card.md",
                          ["Required Card Fields", "Fenced Block Syntax", "Canonical Card Examples",
                           "Renderer Rules", "Prompt Injection Guard"])
-        card_ids = validate_cards(issues, text, "references/navigator/next-step-card.md")
+        card_ids, cards = validate_cards(issues, text, "references/navigator/next-step-card.md")
 
         # Check that every lifecycle stage has at least one card
         stages_with_cards: set[str] = set()
-        # Re-parse to get stages
-        cards = parse_card_blocks(text)
         for card in cards:
             cs = card.get("current_stage")
             if isinstance(cs, str) and cs in LIFECYCLE_STAGES:

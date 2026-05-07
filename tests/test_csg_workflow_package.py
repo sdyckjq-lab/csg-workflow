@@ -631,8 +631,11 @@ class NavigatorTest(unittest.TestCase):
         lifecycle = (ROOT / "references/navigator/lifecycle.md").read_text(encoding="utf-8")
         self.assertIn("recovery", lifecycle)
         self.assertIn("cross-cutting", lifecycle)
-        self.assertIn("not", lifecycle)
-        self.assertIn("project stage", lifecycle)
+        # Line 19 says: "recovery is **not** a project stage"
+        self.assertTrue(
+            "not" in lifecycle and "project stage" in lifecycle,
+            "lifecycle.md must state that recovery is not a project stage",
+        )
 
     def test_skill_catalog_has_stable_aliases(self):
         catalog = (ROOT / "references/navigator/skill-catalog.md").read_text(encoding="utf-8")
@@ -883,6 +886,21 @@ class ParseCardBlocksTest(unittest.TestCase):
         text = "```next-step-card\nid: test-5\nwhy: Because: it is needed\n```\n"
         cards = validate_package.parse_card_blocks(text)
         self.assertEqual("Because: it is needed", cards[0]["why"])
+
+    def test_empty_block_not_collected(self):
+        text = "```next-step-card\n\n\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual([], cards, "Empty card block should not produce a card")
+
+    def test_list_inside_nested_map_ignored(self):
+        text = "```next-step-card\nid: test-6\nrendering:\n  markdown: required\n  - stray list item\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(1, len(cards))
+        rendering = cards[0]["rendering"]
+        self.assertIsInstance(rendering, list)
+        # The stray list item is silently ignored (not supported inside nested maps)
+        found = {k: v for item in rendering if isinstance(item, dict) for k, v in item.items()}
+        self.assertEqual("required", found.get("markdown"))
 
 
 class NegativePathValidationTest(unittest.TestCase):
