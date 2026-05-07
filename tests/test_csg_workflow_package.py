@@ -22,17 +22,29 @@ def load_module(path: Path, name: str):
 
 
 validate_package = load_module(
-    ROOT / "skills/csg-workflow/scripts/validate_package.py",
+    ROOT / "scripts/validate_package.py",
     "validate_package",
 )
 apply_rule_block = load_module(
-    ROOT / "skills/csg-workflow/scripts/apply_rule_block.py",
+    ROOT / "scripts/apply_rule_block.py",
     "apply_rule_block",
 )
 check_deps = load_module(
-    ROOT / "skills/csg-workflow/scripts/check_dependencies.py",
+    ROOT / "scripts/check_dependencies.py",
     "check_dependencies",
 )
+
+
+def _copy_skill_tree(src: Path, dst: Path) -> None:
+    """Copy root-level skill files for temp validation."""
+    for name in ("SKILL.md", "README.md", "LICENSE"):
+        if (src / name).exists():
+            shutil.copy(src / name, dst / name)
+    for d in ("references", "assets", "scripts", "agents", "examples"):
+        if (src / d).is_dir():
+            shutil.copytree(src / d, dst / d)
+    if (src / "tests" / "pressure-scenarios").is_dir():
+        shutil.copytree(src / "tests" / "pressure-scenarios", dst / "tests" / "pressure-scenarios")
 
 
 def scenario_section(scenarios: str, heading: str) -> str:
@@ -50,7 +62,7 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertEqual([], issues)
 
     def test_skill_routing_intercept_precedes_v1_guidance(self):
-        skill_text = (ROOT / "skills/csg-workflow/SKILL.md").read_text(encoding="utf-8")
+        skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         intercept_start = skill_text.index("## 强制路由")
         v1_boundary_start = skill_text.index("## V1 Boundary")
         intercept = skill_text[intercept_start:v1_boundary_start]
@@ -66,7 +78,7 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertIn("ambiguous", intercept)
 
     def test_skill_start_here_is_replaced_by_post_routing_guidance(self):
-        skill_text = (ROOT / "skills/csg-workflow/SKILL.md").read_text(encoding="utf-8")
+        skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
 
         self.assertNotIn("## Start Here", skill_text)
         self.assertIn("## 路由完成后", skill_text)
@@ -95,8 +107,8 @@ class ValidatePackageTest(unittest.TestCase):
 
     def test_rule_blocks_enforce_post_compact_routing(self):
         for rel in [
-            "skills/csg-workflow/assets/templates/AGENTS.md.block",
-            "skills/csg-workflow/assets/templates/CLAUDE.md.block",
+            "assets/templates/AGENTS.md.block",
+            "assets/templates/CLAUDE.md.block",
         ]:
             block = (ROOT / rel).read_text(encoding="utf-8")
 
@@ -114,7 +126,7 @@ class ValidatePackageTest(unittest.TestCase):
             self.assertIn("ambiguous", block)
 
     def test_handoff_reference_enforces_post_compact_routing(self):
-        handoff = (ROOT / "skills/csg-workflow/references/handoff-state.md").read_text(encoding="utf-8")
+        handoff = (ROOT / "references/handoff-state.md").read_text(encoding="utf-8")
 
         self.assertIn("After compact, clear, or a new session: route only", handoff)
         self.assertIn("identify the current stage", handoff)
@@ -135,7 +147,7 @@ class ValidatePackageTest(unittest.TestCase):
 
     def test_state_templates_include_in_progress_checkpoint(self):
         for rel in [
-            "skills/csg-workflow/assets/templates/workflow/state.md",
+            "assets/templates/workflow/state.md",
             "examples/minimal-project/docs/workflow/state.md",
         ]:
             state = (ROOT / rel).read_text(encoding="utf-8")
@@ -183,7 +195,7 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertIn("does not resume already-completed work", ae15)
 
     def test_stage_router_points_recovery_to_state_health_preflight(self):
-        stage_router = (ROOT / "skills/csg-workflow/references/stage-router.md").read_text(encoding="utf-8")
+        stage_router = (ROOT / "references/stage-router.md").read_text(encoding="utf-8")
 
         self.assertIn("Run the state-health preflight", stage_router)
         self.assertIn("If state is stale, repair obvious mismatches", stage_router)
@@ -191,7 +203,7 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertIn("stop with a confirmation question", stage_router)
 
     def test_project_rules_defer_to_packaged_rule_blocks(self):
-        project_rules = (ROOT / "skills/csg-workflow/references/project-rules.md").read_text(encoding="utf-8")
+        project_rules = (ROOT / "references/project-rules.md").read_text(encoding="utf-8")
 
         self.assertIn("state-health preflight", project_rules)
         self.assertIn("check `docs/workflow/log.md`", project_rules)
@@ -200,29 +212,21 @@ class ValidatePackageTest(unittest.TestCase):
     def test_state_heading_validation_does_not_accept_checkpoint_substring(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            shutil.copytree(ROOT / "skills", tmp_root / "skills")
-            shutil.copytree(ROOT / "examples", tmp_root / "examples")
-            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
-            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
-            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
-            state_file = tmp_root / "skills/csg-workflow/assets/templates/workflow/state.md"
+            _copy_skill_tree(ROOT, tmp_root)
+            state_file = tmp_root / "assets/templates/workflow/state.md"
             state_file.write_text(state_file.read_text(encoding="utf-8").replace("## 下一步", "## Next action"), encoding="utf-8")
 
             issues = validate_package.validate(tmp_root)
 
         self.assertIn(
-            "skills/csg-workflow/assets/templates/workflow/state.md: missing required heading: 下一步",
+            "assets/templates/workflow/state.md: missing required heading: 下一步",
             issues,
         )
 
     def test_pressure_scenario_validation_requires_heading(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            shutil.copytree(ROOT / "skills", tmp_root / "skills")
-            shutil.copytree(ROOT / "examples", tmp_root / "examples")
-            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
-            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
-            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
+            _copy_skill_tree(ROOT, tmp_root)
             scenarios_file = tmp_root / "tests/pressure-scenarios/csg-workflow-v1.md"
             scenarios_file.write_text(
                 scenarios_file.read_text(encoding="utf-8").replace(
@@ -239,9 +243,7 @@ class ValidatePackageTest(unittest.TestCase):
     def test_missing_skill_description_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            target = tmp_root / "skills/csg-workflow"
-            target.mkdir(parents=True)
-            (target / "SKILL.md").write_text("---\nname: csg-workflow\n---\n\n# Broken\n", encoding="utf-8")
+            (tmp_root / "SKILL.md").write_text("---\nname: csg-workflow\n---\n\n# Broken\n", encoding="utf-8")
 
             issues = validate_package.validate(tmp_root)
 
@@ -250,12 +252,8 @@ class ValidatePackageTest(unittest.TestCase):
     def test_absolute_local_path_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            shutil.copytree(ROOT / "skills", tmp_root / "skills")
-            shutil.copytree(ROOT / "examples", tmp_root / "examples")
-            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
-            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
-            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
-            skill_file = tmp_root / "skills/csg-workflow/SKILL.md"
+            _copy_skill_tree(ROOT, tmp_root)
+            skill_file = tmp_root / "SKILL.md"
             absolute_path = "/" + "Users/example/project"
             skill_file.write_text(skill_file.read_text(encoding="utf-8") + f"\n{absolute_path}\n", encoding="utf-8")
 
@@ -266,26 +264,43 @@ class ValidatePackageTest(unittest.TestCase):
     def test_python_script_absolute_local_path_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            shutil.copytree(ROOT / "skills", tmp_root / "skills")
-            shutil.copytree(ROOT / "examples", tmp_root / "examples")
-            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
-            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
-            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
-            script_file = tmp_root / "skills/csg-workflow/scripts/apply_rule_block.py"
+            _copy_skill_tree(ROOT, tmp_root)
+            script_file = tmp_root / "scripts/apply_rule_block.py"
             absolute_path = "/" + "Users/example/project"
             script_file.write_text(script_file.read_text(encoding="utf-8") + f"\n# {absolute_path}\n", encoding="utf-8")
 
             issues = validate_package.validate(tmp_root)
 
-        self.assertTrue(any("skills/csg-workflow/scripts/apply_rule_block.py" in issue for issue in issues))
+        self.assertTrue(any("scripts/apply_rule_block.py" in issue for issue in issues))
         self.assertTrue(any("absolute local path" in issue for issue in issues))
+
+    def test_old_nested_skill_entry_is_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            old_dir = tmp_root / "skills/csg-workflow"
+            old_dir.mkdir(parents=True)
+            (old_dir / "SKILL.md").write_text("---\nname: csg-workflow\n---\n", encoding="utf-8")
+
+            issues = validate_package.validate(tmp_root)
+
+        self.assertTrue(any("old nested entry still exists" in issue for issue in issues))
+
+    def test_simulated_clone_install(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_dir = Path(tmp) / "csg-workflow"
+            skill_dir.mkdir()
+            _copy_skill_tree(ROOT, skill_dir)
+
+            self.assertTrue((skill_dir / "SKILL.md").is_file())
+            self.assertFalse((skill_dir / "skills/csg-workflow/SKILL.md").exists())
 
 
 class ApplyRuleBlockTest(unittest.TestCase):
     def test_preview_does_not_write(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "AGENTS.md"
-            template = ROOT / "skills/csg-workflow/assets/templates/AGENTS.md.block"
+            template = ROOT / "assets/templates/AGENTS.md.block"
             target.write_text("# Existing\n\nKeep this.\n", encoding="utf-8")
 
             result = apply_rule_block.apply_rule_block(target, template)
@@ -298,7 +313,7 @@ class ApplyRuleBlockTest(unittest.TestCase):
     def test_write_replaces_only_marked_block(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "AGENTS.md"
-            template = ROOT / "skills/csg-workflow/assets/templates/AGENTS.md.block"
+            template = ROOT / "assets/templates/AGENTS.md.block"
             fixture = ROOT / "tests/fixtures/rules/existing_agents.md"
             shutil.copy(fixture, target)
 
@@ -316,7 +331,7 @@ class ApplyRuleBlockTest(unittest.TestCase):
     def test_missing_file_requires_explicit_creation(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "AGENTS.md"
-            template = ROOT / "skills/csg-workflow/assets/templates/AGENTS.md.block"
+            template = ROOT / "assets/templates/AGENTS.md.block"
 
             result = apply_rule_block.apply_rule_block(target, template)
 
@@ -327,7 +342,7 @@ class ApplyRuleBlockTest(unittest.TestCase):
     def test_broken_marker_pair_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "AGENTS.md"
-            template = ROOT / "skills/csg-workflow/assets/templates/AGENTS.md.block"
+            template = ROOT / "assets/templates/AGENTS.md.block"
             target.write_text("# Existing\n\n<!-- BEGIN CSG-WORKFLOW RULES -->\n", encoding="utf-8")
 
             with self.assertRaises(apply_rule_block.RuleBlockError):
@@ -336,7 +351,7 @@ class ApplyRuleBlockTest(unittest.TestCase):
     def test_reversed_marker_pair_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "AGENTS.md"
-            template = ROOT / "skills/csg-workflow/assets/templates/AGENTS.md.block"
+            template = ROOT / "assets/templates/AGENTS.md.block"
             target.write_text(
                 "# Existing\n\n<!-- END CSG-WORKFLOW RULES -->\nold\n<!-- BEGIN CSG-WORKFLOW RULES -->\n",
                 encoding="utf-8",

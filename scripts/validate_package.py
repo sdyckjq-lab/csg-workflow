@@ -10,22 +10,22 @@ from pathlib import Path
 
 
 REQUIRED_FILES = [
-    "skills/csg-workflow/SKILL.md",
-    "skills/csg-workflow/agents/openai.yaml",
-    "skills/csg-workflow/references/stage-router.md",
-    "skills/csg-workflow/references/skill-selection.md",
-    "skills/csg-workflow/references/handoff-state.md",
-    "skills/csg-workflow/references/project-rules.md",
-    "skills/csg-workflow/references/missing-skills.md",
-    "skills/csg-workflow/assets/templates/AGENTS.md.block",
-    "skills/csg-workflow/assets/templates/CLAUDE.md.block",
-    "skills/csg-workflow/assets/templates/workflow/state.md",
-    "skills/csg-workflow/assets/templates/workflow/decisions.md",
-    "skills/csg-workflow/assets/templates/workflow/log.md",
-    "skills/csg-workflow/scripts/apply_rule_block.py",
-    "skills/csg-workflow/scripts/validate_package.py",
-    "skills/csg-workflow/scripts/check_dependencies.py",
-    "skills/csg-workflow/references/dependency-setup.md",
+    "SKILL.md",
+    "agents/openai.yaml",
+    "references/stage-router.md",
+    "references/skill-selection.md",
+    "references/handoff-state.md",
+    "references/project-rules.md",
+    "references/missing-skills.md",
+    "references/dependency-setup.md",
+    "assets/templates/AGENTS.md.block",
+    "assets/templates/CLAUDE.md.block",
+    "assets/templates/workflow/state.md",
+    "assets/templates/workflow/decisions.md",
+    "assets/templates/workflow/log.md",
+    "scripts/apply_rule_block.py",
+    "scripts/validate_package.py",
+    "scripts/check_dependencies.py",
     "examples/minimal-project/README.md",
     "examples/minimal-project/docs/workflow/state.md",
     "examples/minimal-project/docs/workflow/decisions.md",
@@ -39,11 +39,16 @@ REQUIRED_FILES = [
 SCAN_GLOBS = [
     "README.md",
     "LICENSE",
-    "skills/csg-workflow/**/*.md",
-    "skills/csg-workflow/**/*.yaml",
-    "skills/csg-workflow/**/*.py",
+    "SKILL.md",
+    "references/**/*.md",
+    "agents/**/*.yaml",
+    "scripts/**/*.py",
     "examples/**/*.md",
     "tests/pressure-scenarios/**/*.md",
+]
+
+OLD_ENTRY_PATHS = [
+    "skills/csg-workflow/SKILL.md",
 ]
 
 FORBIDDEN_PATTERNS = [
@@ -106,20 +111,25 @@ def validate(root: Path) -> list[str]:
         if not (root / rel).is_file():
             issues.append(f"{rel}: missing required file")
 
-    skill_path = root / "skills/csg-workflow/SKILL.md"
+    # Regression check: old nested entry must not exist
+    for old_rel in OLD_ENTRY_PATHS:
+        if (root / old_rel).exists():
+            issues.append(f"{old_rel}: old nested entry still exists, must be removed")
+
+    skill_path = root / "SKILL.md"
     if skill_path.is_file():
         skill_text = read_text(skill_path)
         fm = frontmatter(skill_text)
         if not fm:
-            issues.append("skills/csg-workflow/SKILL.md: missing YAML frontmatter")
+            issues.append("SKILL.md: missing YAML frontmatter")
         if not re.search(r"^name:\s*csg-workflow\s*$", fm, re.MULTILINE):
-            issues.append("skills/csg-workflow/SKILL.md: missing name: csg-workflow")
+            issues.append("SKILL.md: missing name: csg-workflow")
         if not re.search(r"^description:\s*.+", fm, re.MULTILINE):
-            issues.append("skills/csg-workflow/SKILL.md: missing description")
+            issues.append("SKILL.md: missing description")
         require_contains(
             issues,
             skill_text,
-            "skills/csg-workflow/SKILL.md",
+            "SKILL.md",
             [
                 "CSG means Compound, Superpowers, and Gstack",
                 "V1 does not",
@@ -130,13 +140,13 @@ def validate(root: Path) -> list[str]:
             ],
         )
 
-    agent_path = root / "skills/csg-workflow/agents/openai.yaml"
+    agent_path = root / "agents/openai.yaml"
     if agent_path.is_file():
         agent_text = read_text(agent_path)
         require_contains(
             issues,
             agent_text,
-            "skills/csg-workflow/agents/openai.yaml",
+            "agents/openai.yaml",
             ["display_name:", "short_description:", "default_prompt:", "$csg-workflow"],
         )
 
@@ -156,39 +166,39 @@ def validate(root: Path) -> list[str]:
     if license_path.is_file() and "MIT License" not in read_text(license_path):
         issues.append("LICENSE: expected MIT License text")
 
-    deps_ref_path = root / "skills/csg-workflow/references/dependency-setup.md"
+    deps_ref_path = root / "references/dependency-setup.md"
     if deps_ref_path.is_file():
         deps_text = read_text(deps_ref_path)
         require_contains(
             issues,
             deps_text,
-            "skills/csg-workflow/references/dependency-setup.md",
+            "references/dependency-setup.md",
             ["compound-engineering", "superpowers@claude-plugins-official", "gstack", "git clone"],
         )
 
-    stage_router_path = root / "skills/csg-workflow/references/stage-router.md"
+    stage_router_path = root / "references/stage-router.md"
     if stage_router_path.is_file():
         stage_router_text = read_text(stage_router_path)
         require_contains(
             issues,
             stage_router_text,
-            "skills/csg-workflow/references/stage-router.md",
+            "references/stage-router.md",
             ["state-health preflight", "repair obvious mismatches", "check `docs/workflow/log.md`"],
         )
 
-    project_rules_path = root / "skills/csg-workflow/references/project-rules.md"
+    project_rules_path = root / "references/project-rules.md"
     if project_rules_path.is_file():
         project_rules_text = read_text(project_rules_path)
         require_contains(
             issues,
             project_rules_text,
-            "skills/csg-workflow/references/project-rules.md",
+            "references/project-rules.md",
             ["state-health preflight", "check `docs/workflow/log.md`", "source of truth"],
         )
 
     for rel in [
-        "skills/csg-workflow/assets/templates/AGENTS.md.block",
-        "skills/csg-workflow/assets/templates/CLAUDE.md.block",
+        "assets/templates/AGENTS.md.block",
+        "assets/templates/CLAUDE.md.block",
     ]:
         path = root / rel
         if path.is_file():
@@ -204,18 +214,18 @@ def validate(root: Path) -> list[str]:
                 ["state-health preflight", "obvious mismatch", "ambiguous", "in-progress checkpoint"],
             )
 
-    handoff_path = root / "skills/csg-workflow/references/handoff-state.md"
+    handoff_path = root / "references/handoff-state.md"
     if handoff_path.is_file():
         handoff_text = read_text(handoff_path)
         require_contains(
             issues,
             handoff_text,
-            "skills/csg-workflow/references/handoff-state.md",
+            "references/handoff-state.md",
             ["State Health Preflight", "Completed Task Snapshot", "40 lines", "60 lines", "ambiguous"],
         )
 
     for rel in [
-        "skills/csg-workflow/assets/templates/workflow/state.md",
+        "assets/templates/workflow/state.md",
         "examples/minimal-project/docs/workflow/state.md",
     ]:
         path = root / rel
@@ -257,7 +267,7 @@ def validate(root: Path) -> list[str]:
             issues.append("docs/workflow/state.md: contains long-history section")
 
     for rel in [
-        "skills/csg-workflow/assets/templates/workflow/decisions.md",
+        "assets/templates/workflow/decisions.md",
         "examples/minimal-project/docs/workflow/decisions.md",
     ]:
         path = root / rel
@@ -265,7 +275,7 @@ def validate(root: Path) -> list[str]:
             issues.append(f"{rel}: missing long-term decision guidance")
 
     for rel in [
-        "skills/csg-workflow/assets/templates/workflow/log.md",
+        "assets/templates/workflow/log.md",
         "examples/minimal-project/docs/workflow/log.md",
     ]:
         path = root / rel

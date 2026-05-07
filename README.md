@@ -32,11 +32,11 @@ CSG means Compound, Superpowers, and Gstack. The Skill helps a Codex or Claude C
 
 安装方式：
 
-1. 把 `skills/csg-workflow/` 复制到你的 Codex Skill 目录，通常是 `$HOME/.codex/skills/`。
-2. 重新打开 Codex，或开始一个新对话，让 Skill 被重新发现。
+1. 把整个仓库克隆到你的 Skill 目录：`git clone <repo> ~/.claude/skills/csg-workflow`（Claude Code）或 `$HOME/.codex/skills/csg-workflow`（Codex）。
+2. 重新打开工具，或开始一个新对话，让 Skill 被重新发现。
 3. 在项目里使用 `$csg-workflow`，让它读取或创建 `docs/workflow/state.md`。
 
-Claude Code 用户可以把同一个 Skill 目录复制到自己的 Claude Code Skill 目录。不同工具的项目规则文件不同：Codex 通常读 `AGENTS.md`，Claude Code 通常读 `CLAUDE.md`。
+关键要求：目标目录第一层必须直接包含 `SKILL.md`。
 
 ## Dependencies
 
@@ -72,11 +72,12 @@ Claude Code 用户可以把同一个 Skill 目录复制到自己的 Claude Code 
 ## Package Layout
 
 ```text
-skills/csg-workflow/
+csg-workflow/
   SKILL.md
   references/
   assets/templates/
   scripts/
+  agents/
 examples/minimal-project/
 tests/
 ```
@@ -86,7 +87,7 @@ tests/
 运行验证：
 
 ```bash
-python3 skills/csg-workflow/scripts/validate_package.py
+python3 scripts/validate_package.py
 python3 -m unittest tests/test_csg_workflow_package.py
 ```
 

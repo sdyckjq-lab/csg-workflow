@@ -10,7 +10,7 @@ Use this file when csg-workflow runs for the first time, or when the user asks t
 
 ## How to Check
 
-1. Run `python3 skills/csg-workflow/scripts/check_dependencies.py`.
+1. Run `python3 scripts/check_dependencies.py`.
 2. Read the output. If any plugin shows `missing`, proceed to install guidance.
 3. If using `--json`, parse the JSON output for `status` fields.
 
