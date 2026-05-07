@@ -12,7 +12,7 @@ description: Use when a Codex or Claude Code user needs to start, resume, or adv
 在完成下面步骤前，不要处理 command-args 里的具体任务。
 
 1. Read project rules when present: `AGENTS.md` for Codex, `CLAUDE.md` for Claude Code.
-2. Read `docs/workflow/state.md` when it exists. If state is missing or stale, repair the handoff first. Use `assets/templates/workflow/`.
+2. Read `docs/workflow/state.md` when it exists. Run a state-health preflight before trusting it. If state is missing or has an obvious stale mismatch, repair the handoff first. If the mismatch is ambiguous, ask which source of truth to use. Use `references/handoff-state.md` and `assets/templates/workflow/`.
 3. If state.md has no `## 依赖状态` section, or if `最后检查` is `Not recorded yet`, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
 4. Determine the current stage. If unclear, read `references/stage-router.md`. Recommend one next Skill, optional alternatives, and Skills to avoid right now. Explain the recommendation in simple language.
 5. Ask the user before invoking or routing into the next Skill.

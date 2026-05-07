@@ -8,11 +8,12 @@ Do not start by picking a tool. Start by deciding the stage:
 
 1. Read `AGENTS.md` or `CLAUDE.md` when present.
 2. Read `docs/workflow/state.md` when present.
-3. Compare the user's current request with the stage table below.
-4. Recommend exactly one next Skill as the default.
-5. Explain why that Skill fits the current stage.
-6. Ask before invoking or routing to that Skill.
-7. Update handoff files when the stage changes.
+3. Run the state-health preflight in `references/handoff-state.md` before trusting recorded state.
+4. Compare the user's current request with the stage table below.
+5. Recommend exactly one next Skill as the default.
+6. Explain why that Skill fits the current stage.
+7. Ask before invoking or routing to that Skill.
+8. Update handoff files when the stage changes.
 
 If `state.md` is missing in an existing project, repair state before advancing. If `state.md` exists but does not say a current stage or next action, treat it as incomplete.
 
@@ -90,4 +91,4 @@ Route: beginner small project. Keep requirements and plan light, but still keep 
 
 Input: "Continue this project."
 
-Route: context recovery. Read project rules and `docs/workflow/state.md` first. Continue from the recorded next action.
+Route: context recovery. Read project rules and `docs/workflow/state.md` first, then run the state-health preflight from `references/handoff-state.md`. If state is stale, repair obvious mismatches or ask when evidence is ambiguous. If a checkpoint is active, check `docs/workflow/log.md` before resuming it. Name one exact next Skill and stop with a confirmation question.

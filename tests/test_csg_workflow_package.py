@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import shutil
 import sys
 import tempfile
@@ -34,6 +35,15 @@ check_deps = load_module(
 )
 
 
+def scenario_section(scenarios: str, heading: str) -> str:
+    start = scenarios.index(f"## {heading}")
+    next_match = re.search(r"\n## AE\d+:", scenarios[start + 1 :])
+    if next_match is None:
+        return scenarios[start:]
+    end = start + 1 + next_match.start()
+    return scenarios[start:end]
+
+
 class ValidatePackageTest(unittest.TestCase):
     def test_current_package_is_valid(self):
         issues = validate_package.validate(ROOT)
@@ -51,6 +61,9 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertIn("将 command-args 当作直接任务来回应", intercept)
         self.assertIn("启动调研、设计、实现", intercept)
         self.assertIn("调用 Agent 或其他工具", intercept)
+        self.assertIn("state-health preflight", intercept)
+        self.assertIn("obvious", intercept)
+        self.assertIn("ambiguous", intercept)
 
     def test_skill_start_here_is_replaced_by_post_routing_guidance(self):
         skill_text = (ROOT / "skills/csg-workflow/SKILL.md").read_text(encoding="utf-8")
@@ -61,14 +74,167 @@ class ValidatePackageTest(unittest.TestCase):
 
     def test_pressure_scenarios_include_command_args_intercept(self):
         scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
-        ae11_start = scenarios.index("## AE11: Command Args Routing Intercept")
-        ae11 = scenarios[ae11_start:]
+        ae11 = scenario_section(scenarios, "AE11: Command Args Routing Intercept")
 
         self.assertIn("`/csg-workflow 我想加一个功能...如何设计？`", ae11)
         self.assertIn("routing context, not as a direct design task", ae11)
         self.assertIn("reads project rules and `docs/workflow/state.md`", ae11)
         self.assertIn("before any research, design, implementation, or Agent call", ae11)
         self.assertIn("asks before invoking or routing into the next Skill", ae11)
+
+    def test_pressure_scenarios_include_post_compact_recovery(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        ae12 = scenario_section(scenarios, "AE12: Post-Compact Routing Recovery")
+
+        self.assertIn("long session has compacted or a new session starts", ae12)
+        self.assertIn("persisted project rules and `docs/workflow/state.md`", ae12)
+        self.assertIn("routing context first", ae12)
+        self.assertIn("names one exact next Skill", ae12)
+        self.assertIn("stops with a confirmation question", ae12)
+        self.assertIn("does not contain a feature design", ae12)
+
+    def test_rule_blocks_enforce_post_compact_routing(self):
+        for rel in [
+            "skills/csg-workflow/assets/templates/AGENTS.md.block",
+            "skills/csg-workflow/assets/templates/CLAUDE.md.block",
+        ]:
+            block = (ROOT / rel).read_text(encoding="utf-8")
+
+            self.assertIn("Recovery intercept", block)
+            self.assertIn("after compact, clear, or a new session, you only route", block)
+            self.assertIn("Do not design, plan, research, implement, or call/read another Skill", block)
+            self.assertIn("exact default next Skill name", block)
+            self.assertIn("confirmation question", block)
+            self.assertIn("in-progress checkpoint", block)
+            self.assertIn("check `docs/workflow/log.md`", block)
+            self.assertIn("Resume only when the task is not already complete", block)
+            self.assertIn("Before starting a confirmed next Skill", block)
+            self.assertIn("state-health preflight", block)
+            self.assertIn("obvious mismatch", block)
+            self.assertIn("ambiguous", block)
+
+    def test_handoff_reference_enforces_post_compact_routing(self):
+        handoff = (ROOT / "skills/csg-workflow/references/handoff-state.md").read_text(encoding="utf-8")
+
+        self.assertIn("After compact, clear, or a new session: route only", handoff)
+        self.assertIn("identify the current stage", handoff)
+        self.assertIn("name the exact default next Skill", handoff)
+        self.assertIn("stop with a confirmation question", handoff)
+        self.assertIn("Do not describe the next step only as a generic task or stage", handoff)
+        self.assertIn("Do not design, plan, research, implement, or call/read another Skill", handoff)
+        self.assertIn("Before invoking or routing into a confirmed next Skill", handoff)
+        self.assertIn("in-progress checkpoint", handoff)
+        self.assertIn("compare it with `docs/workflow/log.md`", handoff)
+        self.assertIn("not already recorded as complete", handoff)
+        self.assertIn("State Health Preflight", handoff)
+        self.assertIn("Completed Task Snapshot", handoff)
+        self.assertIn("40 lines", handoff)
+        self.assertIn("60 lines", handoff)
+        self.assertIn("obvious mismatch", handoff)
+        self.assertIn("ambiguous", handoff)
+
+    def test_state_templates_include_in_progress_checkpoint(self):
+        for rel in [
+            "skills/csg-workflow/assets/templates/workflow/state.md",
+            "examples/minimal-project/docs/workflow/state.md",
+        ]:
+            state = (ROOT / rel).read_text(encoding="utf-8")
+
+            self.assertIn("## 执行中检查点", state)
+            self.assertIn("状态: idle.", state)
+            self.assertIn("当前 Skill: None.", state)
+            self.assertIn("恢复时下一步", state)
+            self.assertIn("## 上一个任务", state)
+            self.assertLessEqual(len(state.splitlines()), 60)
+
+    def test_live_state_snapshot_is_short(self):
+        state = (ROOT / "docs/workflow/state.md").read_text(encoding="utf-8")
+
+        self.assertLessEqual(len(state.splitlines()), 60)
+        self.assertNotIn("## 已完成内容", state)
+        self.assertNotIn("完整 Skill", state)
+
+    def test_pressure_scenarios_include_in_progress_compact_recovery(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        ae13 = scenario_section(scenarios, "AE13: In-Progress Compact Recovery")
+
+        self.assertIn("in-progress checkpoint is active for `ce-plan`", ae13)
+        self.assertIn("compact happens before the plan is saved", ae13)
+        self.assertIn("names `ce-plan` and recommends resuming that recorded work first", ae13)
+        self.assertIn("does not switch back to ideation", ae13)
+        self.assertIn("stops with a confirmation question", ae13)
+
+    def test_pressure_scenarios_include_stale_state_recovery(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        ae14 = scenario_section(scenarios, "AE14: Stale State Recovery")
+
+        self.assertIn("state-health preflight", ae14)
+        self.assertIn("obvious mismatch", ae14)
+        self.assertIn("repairs `state.md` before routing", ae14)
+        self.assertIn("does not blindly route from the stale next action", ae14)
+
+    def test_pressure_scenarios_include_completed_state_recovery(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        ae15 = scenario_section(scenarios, "AE15: Completed State Recovery")
+
+        self.assertIn("in-progress checkpoint says `ce-plan`", ae15)
+        self.assertIn("recorded as complete in `docs/workflow/log.md`", ae15)
+        self.assertIn("clears or replaces the checkpoint", ae15)
+        self.assertIn("does not resume already-completed work", ae15)
+
+    def test_stage_router_points_recovery_to_state_health_preflight(self):
+        stage_router = (ROOT / "skills/csg-workflow/references/stage-router.md").read_text(encoding="utf-8")
+
+        self.assertIn("Run the state-health preflight", stage_router)
+        self.assertIn("If state is stale, repair obvious mismatches", stage_router)
+        self.assertIn("check `docs/workflow/log.md` before resuming", stage_router)
+        self.assertIn("stop with a confirmation question", stage_router)
+
+    def test_project_rules_defer_to_packaged_rule_blocks(self):
+        project_rules = (ROOT / "skills/csg-workflow/references/project-rules.md").read_text(encoding="utf-8")
+
+        self.assertIn("state-health preflight", project_rules)
+        self.assertIn("check `docs/workflow/log.md`", project_rules)
+        self.assertIn("source of truth", project_rules)
+
+    def test_state_heading_validation_does_not_accept_checkpoint_substring(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            shutil.copytree(ROOT / "skills", tmp_root / "skills")
+            shutil.copytree(ROOT / "examples", tmp_root / "examples")
+            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
+            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
+            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
+            state_file = tmp_root / "skills/csg-workflow/assets/templates/workflow/state.md"
+            state_file.write_text(state_file.read_text(encoding="utf-8").replace("## 下一步", "## Next action"), encoding="utf-8")
+
+            issues = validate_package.validate(tmp_root)
+
+        self.assertIn(
+            "skills/csg-workflow/assets/templates/workflow/state.md: missing required heading: 下一步",
+            issues,
+        )
+
+    def test_pressure_scenario_validation_requires_heading(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            shutil.copytree(ROOT / "skills", tmp_root / "skills")
+            shutil.copytree(ROOT / "examples", tmp_root / "examples")
+            shutil.copytree(ROOT / "tests/pressure-scenarios", tmp_root / "tests/pressure-scenarios")
+            shutil.copy(ROOT / "README.md", tmp_root / "README.md")
+            shutil.copy(ROOT / "LICENSE", tmp_root / "LICENSE")
+            scenarios_file = tmp_root / "tests/pressure-scenarios/csg-workflow-v1.md"
+            scenarios_file.write_text(
+                scenarios_file.read_text(encoding="utf-8").replace(
+                    "## AE14: Stale State Recovery",
+                    "AE14: Stale State Recovery",
+                ),
+                encoding="utf-8",
+            )
+
+            issues = validate_package.validate(tmp_root)
+
+        self.assertIn("tests/pressure-scenarios/csg-workflow-v1.md: missing AE14", issues)
 
     def test_missing_skill_description_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:

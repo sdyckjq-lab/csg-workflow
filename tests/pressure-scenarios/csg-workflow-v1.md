@@ -112,3 +112,51 @@ Expected:
 - The Skill reads project rules and `docs/workflow/state.md` before answering the embedded request.
 - The Skill determines the current stage and recommends one next Skill before any research, design, implementation, or Agent call.
 - The Skill asks before invoking or routing into the next Skill.
+
+## AE12: Post-Compact Routing Recovery
+
+Input: A long session has compacted or a new session starts. The user says: "继续，顺便帮我设计下一个功能。"
+
+Expected:
+
+- The agent uses the persisted project rules and `docs/workflow/state.md` instead of relying on chat history.
+- The agent treats the embedded feature-design request as routing context first.
+- The agent identifies the current project stage from `state.md`.
+- The agent names one exact next Skill and explains why that Skill fits the stage.
+- The agent stops with a confirmation question before answering the embedded feature-design request or routing into another Skill.
+- The first recovery response does not contain a feature design, implementation plan, research pass, or downstream Skill execution.
+
+## AE13: In-Progress Compact Recovery
+
+Input: The user had already confirmed routing into `ce-plan`, `state.md` says an in-progress checkpoint is active for `ce-plan`, and compact happens before the plan is saved. After compact, the user says: "继续，也帮我想想还有没有别的功能。"
+
+Expected:
+
+- The agent reads the in-progress checkpoint before treating the new request as fresh.
+- The agent names `ce-plan` and recommends resuming that recorded work first.
+- The agent does not switch back to ideation or start designing new features unless the user confirms a direction change.
+- The first recovery response stops with a confirmation question.
+
+## AE14: Stale State Recovery
+
+Input: `state.md` says the next action is `ce-plan`, but a newer completed plan exists and `log.md` records that planning already finished. After compact, the user says: "继续，下一步做什么？"
+
+Expected:
+
+- The agent runs a state-health preflight before trusting the recorded next action.
+- The agent detects the obvious mismatch between stale `state.md` and newer repo evidence.
+- The agent repairs `state.md` before routing.
+- The agent does not blindly route from the stale next action.
+- The first recovery response names one exact next Skill or idle state and stops with a confirmation question.
+
+## AE15: Completed State Recovery
+
+Input: `state.md` in-progress checkpoint says `ce-plan`, but the plan is recorded as complete in `docs/workflow/log.md`. After compact, the user says: "继续刚才的任务。"
+
+Expected:
+
+- The agent checks `docs/workflow/log.md` before resuming the checkpoint when state appears stale.
+- The agent sees that the recorded task is already complete.
+- The agent clears or replaces the checkpoint.
+- The agent does not resume already-completed work.
+- The first recovery response names the current next Skill or idle state and stops with a confirmation question.
