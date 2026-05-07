@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.0.4.0] - 2026-05-07
+
+### Added
+
+- Skill GPS Navigator: a card-based interaction protocol that gives beginners one clear next-step card per invocation across all stages (bootstrap, idea, requirements, plan, work, review, qa, delivery, learning).
+- `references/navigator/` with five reference files: lifecycle stages, skill catalog with stable aliases, routing rules, next-step card protocol (17 required fields, 9 canonical examples, 4 recovery cards), and workspace state management.
+- `assets/templates/cards/next-step.md` card template with display hierarchy for Markdown rendering.
+- Fenced-block card parser in `validate_package.py` — dependency-free parser that extracts ```next-step-card blocks and validates schema (fields, stages, confidence, roles, routing trace).
+- Compatibility wrappers: old reference files (`stage-router.md`, `skill-selection.md`, `handoff-state.md`) converted to thin delegates to navigator docs, with split-brain guard.
+- 6 new pressure scenarios (AE16–AE21) covering Gate 1 routing: vague idea, completed requirements, missing Skill, post-compact recovery, old-state migration, prompt-injection bypass.
+- `NESTED_MAP_FIELDS` constant replacing magic string tuple in card parser.
+- 2 new parser edge-case tests: empty card block, list-inside-nested-map.
+
+### Changed
+
+- SKILL.md repositioned as "CSG Workflow — Skill GPS" with navigator-based routing.
+- README.md updated for Skill GPS product positioning.
+- `validate_cards()` now returns parsed cards alongside IDs, eliminating redundant parsing.
+- Specialist review findings addressed: redundant parse, magic strings, weak assertions.
+
 ## [0.0.3.0] - 2026-05-07
 
 ### Changed
