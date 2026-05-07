@@ -60,3 +60,33 @@
 - 修复包验证脚本：现在会扫描 `skills/csg-workflow/` 下的 Python 文件。
 - 新增两个测试覆盖上述问题。
 - 验证结果：包验证通过；9 个单元测试通过；两个复现场景均通过。
+
+## 2026-05-07
+
+### Compact 路由修复
+
+- 基于已合并的依赖检测和路由拦截改动，继续解决后半段恢复失效问题。
+- 增加 post-compact route-only 规则和 in-progress checkpoint，要求恢复后先推荐下一步 Skill 并等待确认。
+- 通过包验证、38 个单元测试、以及只读 Codex CLI 恢复试验。
+
+### State-health 计划
+
+- 产出计划：`docs/plans/2026-05-07-001-feat-state-health-recovery-plan.md`。
+- 计划决定把 `state.md` 当作当前快照，不当作历史记录。
+- 计划补充四项约束：主入口同步恢复规则、明显过期自动修不确定先问、真实恢复演练、`state.md` 最多 60 行。
+- 本阶段将原本过长的 live `state.md` 压缩为当前快照，长历史保留在本日志和 `decisions.md`。
+
+### State-health 实现
+
+- 更新 `SKILL.md`、规则块模板和 `handoff-state.md`，恢复时先做 state-health preflight。
+- 明确明显过期时先修 `state.md`，证据不确定时先问用户。
+- 模板和最小示例新增完成态快照字段，`state.md` 上限设为 60 行。
+- 新增 AE14 stale state recovery 和 AE15 completed state recovery 压力场景。
+- 验证结果：包验证通过；41 个单元测试通过；stale state 和 completed checkpoint 两个只读恢复演练通过。
+
+### State-health 审查修复
+
+- 修复 review 发现的恢复路径缺口：活跃 checkpoint 恢复前必须对照 `log.md`，已完成任务不能继续恢复。
+- 补强验证脚本和测试，避免压力场景、标题和 live `state.md` 校验出现假阳性。
+- 压缩 live `state.md`，让它继续作为当前快照，而不是历史记录。
+- 验证结果：包验证通过；45 个单元测试通过；diff 格式检查通过。

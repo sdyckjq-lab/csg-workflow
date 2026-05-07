@@ -57,6 +57,7 @@ FORBIDDEN_PATTERNS = [
 
 RULE_BEGIN = "<!-- BEGIN CSG-WORKFLOW RULES -->"
 RULE_END = "<!-- END CSG-WORKFLOW RULES -->"
+STATE_LINE_LIMIT = 60
 
 
 def read_text(path: Path) -> str:
@@ -90,6 +91,13 @@ def require_contains(issues: list[str], text: str, path: str, terms: list[str]) 
             issues.append(f"{path}: missing required text: {term}")
 
 
+def require_headings(issues: list[str], text: str, path: str, headings: list[str]) -> None:
+    for heading in headings:
+        pattern = rf"^##\s+{re.escape(heading)}\s*$"
+        if not re.search(pattern, text, re.MULTILINE):
+            issues.append(f"{path}: missing required heading: {heading}")
+
+
 def validate(root: Path) -> list[str]:
     root = root.resolve()
     issues: list[str] = []
@@ -117,6 +125,8 @@ def validate(root: Path) -> list[str]:
                 "V1 does not",
                 "Ask the user before invoking or routing into the next Skill",
                 "Never rewrite a whole `AGENTS.md` or `CLAUDE.md`",
+                "state-health preflight",
+                "ambiguous",
             ],
         )
 
@@ -156,6 +166,26 @@ def validate(root: Path) -> list[str]:
             ["compound-engineering", "superpowers@claude-plugins-official", "gstack", "git clone"],
         )
 
+    stage_router_path = root / "skills/csg-workflow/references/stage-router.md"
+    if stage_router_path.is_file():
+        stage_router_text = read_text(stage_router_path)
+        require_contains(
+            issues,
+            stage_router_text,
+            "skills/csg-workflow/references/stage-router.md",
+            ["state-health preflight", "repair obvious mismatches", "check `docs/workflow/log.md`"],
+        )
+
+    project_rules_path = root / "skills/csg-workflow/references/project-rules.md"
+    if project_rules_path.is_file():
+        project_rules_text = read_text(project_rules_path)
+        require_contains(
+            issues,
+            project_rules_text,
+            "skills/csg-workflow/references/project-rules.md",
+            ["state-health preflight", "check `docs/workflow/log.md`", "source of truth"],
+        )
+
     for rel in [
         "skills/csg-workflow/assets/templates/AGENTS.md.block",
         "skills/csg-workflow/assets/templates/CLAUDE.md.block",
@@ -167,6 +197,22 @@ def validate(root: Path) -> list[str]:
                 issues.append(f"{rel}: expected exactly one CSG rule marker pair")
             if "完整 workflow" in text or "完整 Skill 路线表" in text:
                 issues.append(f"{rel}: rule block is too broad for startup rules")
+            require_contains(
+                issues,
+                text,
+                rel,
+                ["state-health preflight", "obvious mismatch", "ambiguous", "in-progress checkpoint"],
+            )
+
+    handoff_path = root / "skills/csg-workflow/references/handoff-state.md"
+    if handoff_path.is_file():
+        handoff_text = read_text(handoff_path)
+        require_contains(
+            issues,
+            handoff_text,
+            "skills/csg-workflow/references/handoff-state.md",
+            ["State Health Preflight", "Completed Task Snapshot", "40 lines", "60 lines", "ambiguous"],
+        )
 
     for rel in [
         "skills/csg-workflow/assets/templates/workflow/state.md",
@@ -179,8 +225,36 @@ def validate(root: Path) -> list[str]:
                 issues,
                 text,
                 rel,
-                ["当前阶段", "项目目标", "当前主要文档", "下一步", "阻塞问题", "最近验证", "不要重复讨论", "依赖状态"],
+                ["状态: idle.", "当前 Skill:", "恢复时下一步"],
             )
+            require_headings(
+                issues,
+                text,
+                rel,
+                ["当前阶段", "项目目标", "当前主要文档", "下一步", "上一个任务", "执行中检查点", "阻塞问题", "最近验证", "不要重复讨论", "依赖状态"],
+            )
+            if len(text.splitlines()) > STATE_LINE_LIMIT:
+                issues.append(f"{rel}: state snapshot exceeds {STATE_LINE_LIMIT} lines")
+
+    live_state_path = root / "docs/workflow/state.md"
+    if live_state_path.is_file():
+        text = read_text(live_state_path)
+        require_headings(
+            issues,
+            text,
+            "docs/workflow/state.md",
+            ["当前阶段", "项目目标", "当前主要文档", "下一步", "上一个任务", "执行中检查点", "阻塞问题", "最近验证", "不要重复讨论", "依赖状态"],
+        )
+        require_contains(
+            issues,
+            text,
+            "docs/workflow/state.md",
+            ["状态:", "当前 Skill:", "恢复时下一步"],
+        )
+        if len(text.splitlines()) > STATE_LINE_LIMIT:
+            issues.append("docs/workflow/state.md: state snapshot exceeds 60 lines")
+        if "## 已完成内容" in text:
+            issues.append("docs/workflow/state.md: contains long-history section")
 
     for rel in [
         "skills/csg-workflow/assets/templates/workflow/decisions.md",
@@ -201,8 +275,8 @@ def validate(root: Path) -> list[str]:
     scenarios_path = root / "tests/pressure-scenarios/csg-workflow-v1.md"
     if scenarios_path.is_file():
         scenarios = read_text(scenarios_path)
-        for index in range(1, 11):
-            if f"AE{index}" not in scenarios:
+        for index in range(1, 16):
+            if not re.search(rf"^## AE{index}:", scenarios, re.MULTILINE):
                 issues.append(f"tests/pressure-scenarios/csg-workflow-v1.md: missing AE{index}")
 
     for path in unique_paths(root):

@@ -24,3 +24,11 @@
 - 实施计划暂定开源许可证使用 MIT，发布前仍可按项目所有者选择调整。
 - 第一版实现采用两个脚本：`validate_package.py` 做包结构和内容验证，`apply_rule_block.py` 做规则块预览和写入。
 - 第一版测试采用 `unittest`，不引入额外依赖。
+
+## 2026-05-07
+
+- `state.md` 是当前恢复快照，不是历史记录；长历史必须放进 `docs/workflow/log.md`。
+- 恢复时必须先做 state-health preflight，再相信 `state.md` 的下一步。
+- 如果状态明显过期，可以先修复 `state.md` 再路由；如果证据不确定，必须先问用户。
+- 活跃 checkpoint 不能直接恢复；必须先对照 `docs/workflow/log.md` 和最近验证，确认任务没有已经完成。
+- `state.md` 目标 40 行以内，硬上限 60 行。

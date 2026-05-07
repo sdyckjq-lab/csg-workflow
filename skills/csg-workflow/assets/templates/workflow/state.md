@@ -20,6 +20,17 @@ Not recorded yet.
 
 Create or update requirements, then route to the next Skill.
 
+## 上一个任务
+
+None recorded yet.
+
+## 执行中检查点
+
+状态: idle.
+当前 Skill: None.
+当前任务: None.
+恢复时下一步: Follow `## 下一步` unless this section says a task is in progress.
+
 ## 阻塞问题
 
 - None recorded yet.

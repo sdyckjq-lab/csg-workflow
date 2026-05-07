@@ -46,7 +46,10 @@ Rule blocks must:
 
 - Stay short.
 - Point to `docs/workflow/state.md`.
-- Tell the agent to continue from recorded state.
+- Tell the agent to run the state-health preflight before trusting recorded state.
+- Tell the agent to check `docs/workflow/log.md` before resuming an active checkpoint.
 - Tell the agent to update state at stage end.
 - Mention that original project rules take priority.
 - Avoid stage tables, Skill catalogs, history, or long explanations.
+
+The packaged templates in `assets/templates/AGENTS.md.block` and `assets/templates/CLAUDE.md.block` are the source of truth for exact rule-block wording.

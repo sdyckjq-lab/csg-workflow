@@ -7,6 +7,11 @@ If this block conflicts with another project rule in `AGENTS.md`, follow the oth
 
 - For non-trivial tasks, read `docs/workflow/state.md` before starting.
 - Continue from the next action in `state.md` unless the user changes direction.
+- Recovery intercept: after compact, clear, or a new session, you only route. Run a state-health preflight before trusting `state.md`. Do not design, plan, research, implement, or call/read another Skill until the user confirms.
+- If state has an obvious mismatch with repo evidence, repair `state.md` before routing. If evidence is ambiguous, ask which source of truth to use.
+- In the first recovery response, only state the current stage, the exact default next Skill name, why it fits, what is premature, and a confirmation question.
+- If `state.md` has an in-progress checkpoint, check `docs/workflow/log.md` and recent verification before resuming it. Resume only when the task is not already complete; otherwise clear or replace the checkpoint before routing.
+- Before starting a confirmed next Skill or any long-running task, update `state.md` with an in-progress checkpoint: current stage, active Skill/task, and resume action.
 - Do not reopen recorded decisions unless `state.md` says to roll back.
 - At stage end, update `docs/workflow/state.md`.
 - Put durable decisions in `docs/workflow/decisions.md`.

@@ -22,6 +22,17 @@ A new AI coding user who needs a clear next step.
 
 Use `ce-brainstorm` to create a short requirements document.
 
+## 上一个任务
+
+Workflow state files were created and checked.
+
+## 执行中检查点
+
+状态: idle.
+当前 Skill: None.
+当前任务: None.
+恢复时下一步: Follow `## 下一步` unless this section says a task is in progress.
+
 ## 阻塞问题
 
 - No requirements document exists yet.
