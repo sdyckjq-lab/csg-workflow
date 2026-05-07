@@ -1,31 +1,34 @@
 # 项目 Workflow 状态
 
 ## 当前阶段
-安装布局修复：已完成扁平化迁移，验证中。
+状态: idle.
+当前 Skill: 无.
+恢复时下一步: 用户指定下一个任务.
 
 ## 项目目标
-让 `csg-workflow` 能被用户按文档安装后直接被 Claude Code 识别。
+Skill GPS Navigator Gate 1 实现。
 
 ## 当前主要文档
-`README.md`、`SKILL.md`、包验证脚本和安装说明。
+`README.md`、`SKILL.md`、navigator references、card template.
 
 ## 下一步
-运行全量验证和旧路径搜索，确认无残留问题后准备提交。
+Gate 1 实现已完成，等待验收。
 
 ## 上一个任务
-state-health recovery 已合并到 `main`。
+安装布局修复和 state-health recovery 已合并到 main。
 
 ## 执行中检查点
-状态: in progress.
-当前 Skill: ce-work.
-当前任务: 执行安装布局修复计划。
-恢复时下一步: 运行 validate_package.py 和全量测试，搜索旧路径残留。
+状态: idle.
+当前 Skill: 无.
+当前任务: 无.
+恢复时下一步: 用户指定下一个任务.
 
 ## 阻塞问题
 - None.
 
 ## 最近验证
-- 47 个单元测试全部通过。
+- 74 个单元测试全部通过。
+- validate_package.py 验证通过。
 
 ## 长期决定摘要
 - `state.md` 是当前快照；长历史放 `log.md`。

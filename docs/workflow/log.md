@@ -90,3 +90,21 @@
 - 补强验证脚本和测试，避免压力场景、标题和 live `state.md` 校验出现假阳性。
 - 压缩 live `state.md`，让它继续作为当前快照，而不是历史记录。
 - 验证结果：包验证通过；45 个单元测试通过；diff 格式检查通过。
+
+## 2026-05-07 Gate 1 Navigator
+
+### Skill GPS Navigator Gate 1 实现
+
+- 基于 CEO plan (Approach C, SELECTIVE EXPANSION) 实现 Skill GPS Navigator Gate 1。
+- 创建 `references/navigator/` 五文件：lifecycle.md、skill-catalog.md、router-rules.md、next-step-card.md、workspace-state.md。
+- 创建 `assets/templates/cards/next-step.md` 卡片模板。
+- 为 9 个生命周期阶段各提供一个规范化 next-step card 示例。
+- 为 4 个恢复场景各提供一个 recovery card 示例。
+- 更新 `SKILL.md` 为 Skill GPS 入口，使用 navigator 参考文件进行路由。
+- 将旧参考文件转为兼容包装器，避免 split brain。
+- 更新 `validate_package.py`：新增 navigator 文件检查、卡片 fenced-block 解析、schema 校验（字段、阶段枚举、唯一 ID、嵌套键）、wrapper no-split-brain 检查。
+- 新增 6 个压力场景（AE16-AE21）：模糊想法、已完成需求、缺 Skill、post-compact 恢复、旧状态迁移、prompt-injection 旁路。
+- 新增 27 个 navigator 测试覆盖所有 Gate 1 功能。
+- 更新 README.md 为 Skill GPS 产品定位。
+- 同步 CEO 审查决策到 decisions.md。
+- 验证结果：包验证通过；74 个单元测试全部通过。

@@ -69,13 +69,12 @@ class ValidatePackageTest(unittest.TestCase):
 
         self.assertLess(intercept_start, v1_boundary_start)
         self.assertIn("你只做路由", intercept)
-        self.assertIn("Ask the user before invoking or routing into the next Skill", intercept)
+        self.assertIn("next-step card", intercept)
         self.assertIn("将 command-args 当作直接任务来回应", intercept)
         self.assertIn("启动调研、设计、实现", intercept)
         self.assertIn("调用 Agent 或其他工具", intercept)
-        self.assertIn("state-health preflight", intercept)
-        self.assertIn("obvious", intercept)
-        self.assertIn("ambiguous", intercept)
+        self.assertIn("navigator/lifecycle.md", intercept)
+        self.assertIn("navigator/skill-catalog.md", intercept)
 
     def test_skill_start_here_is_replaced_by_post_routing_guidance(self):
         skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -125,25 +124,11 @@ class ValidatePackageTest(unittest.TestCase):
             self.assertIn("obvious mismatch", block)
             self.assertIn("ambiguous", block)
 
-    def test_handoff_reference_enforces_post_compact_routing(self):
+    def test_handoff_reference_delegates_to_navigator(self):
         handoff = (ROOT / "references/handoff-state.md").read_text(encoding="utf-8")
 
-        self.assertIn("After compact, clear, or a new session: route only", handoff)
-        self.assertIn("identify the current stage", handoff)
-        self.assertIn("name the exact default next Skill", handoff)
-        self.assertIn("stop with a confirmation question", handoff)
-        self.assertIn("Do not describe the next step only as a generic task or stage", handoff)
-        self.assertIn("Do not design, plan, research, implement, or call/read another Skill", handoff)
-        self.assertIn("Before invoking or routing into a confirmed next Skill", handoff)
-        self.assertIn("in-progress checkpoint", handoff)
-        self.assertIn("compare it with `docs/workflow/log.md`", handoff)
-        self.assertIn("not already recorded as complete", handoff)
-        self.assertIn("State Health Preflight", handoff)
-        self.assertIn("Completed Task Snapshot", handoff)
-        self.assertIn("40 lines", handoff)
-        self.assertIn("60 lines", handoff)
-        self.assertIn("obvious mismatch", handoff)
-        self.assertIn("ambiguous", handoff)
+        self.assertIn("Compatibility Wrapper", handoff)
+        self.assertIn("navigator/workspace-state.md", handoff)
 
     def test_state_templates_include_in_progress_checkpoint(self):
         for rel in [
@@ -194,13 +179,12 @@ class ValidatePackageTest(unittest.TestCase):
         self.assertIn("clears or replaces the checkpoint", ae15)
         self.assertIn("does not resume already-completed work", ae15)
 
-    def test_stage_router_points_recovery_to_state_health_preflight(self):
+    def test_stage_router_delegates_to_navigator(self):
         stage_router = (ROOT / "references/stage-router.md").read_text(encoding="utf-8")
 
-        self.assertIn("Run the state-health preflight", stage_router)
-        self.assertIn("If state is stale, repair obvious mismatches", stage_router)
-        self.assertIn("check `docs/workflow/log.md` before resuming", stage_router)
-        self.assertIn("stop with a confirmation question", stage_router)
+        self.assertIn("Compatibility Wrapper", stage_router)
+        self.assertIn("navigator/lifecycle.md", stage_router)
+        self.assertIn("navigator/router-rules.md", stage_router)
 
     def test_project_rules_defer_to_packaged_rule_blocks(self):
         project_rules = (ROOT / "references/project-rules.md").read_text(encoding="utf-8")
@@ -621,6 +605,376 @@ class CheckDependenciesTest(unittest.TestCase):
         self.assertEqual("installed", parsed["compound"]["status"])
         self.assertEqual("missing", parsed["superpowers"]["status"])
         self.assertEqual("missing", parsed["gstack"]["status"])
+
+
+class NavigatorTest(unittest.TestCase):
+    """Tests for the Skill GPS Navigator Gate 1."""
+
+    def test_navigator_files_exist(self):
+        for name in ("lifecycle.md", "skill-catalog.md", "router-rules.md",
+                      "next-step-card.md", "workspace-state.md"):
+            path = ROOT / "references/navigator" / name
+            self.assertTrue(path.is_file(), f"missing navigator file: {name}")
+
+    def test_card_template_exists(self):
+        path = ROOT / "assets/templates/cards/next-step.md"
+        self.assertTrue(path.is_file(), "missing card template")
+
+    def test_lifecycle_enum_is_complete(self):
+        lifecycle = (ROOT / "references/navigator/lifecycle.md").read_text(encoding="utf-8")
+        stages = ["bootstrap", "idea", "requirements", "plan", "work",
+                   "review", "qa", "delivery", "learning"]
+        for stage in stages:
+            self.assertIn(stage, lifecycle, f"missing stage: {stage}")
+
+    def test_recovery_is_mode_not_stage(self):
+        lifecycle = (ROOT / "references/navigator/lifecycle.md").read_text(encoding="utf-8")
+        self.assertIn("recovery", lifecycle)
+        self.assertIn("cross-cutting", lifecycle)
+        # Line 19 says: "recovery is **not** a project stage"
+        self.assertTrue(
+            "not" in lifecycle and "project stage" in lifecycle,
+            "lifecycle.md must state that recovery is not a project stage",
+        )
+
+    def test_skill_catalog_has_stable_aliases(self):
+        catalog = (ROOT / "references/navigator/skill-catalog.md").read_text(encoding="utf-8")
+        aliases = [
+            "setup-state", "resume-or-clear", "requirements-discovery",
+            "plan-prep", "implementation", "code-review", "qa",
+            "delivery", "post-release-check", "learning-capture",
+        ]
+        for alias in aliases:
+            self.assertIn(alias, catalog, f"missing alias: {alias}")
+
+    def test_skill_catalog_has_resolution_order(self):
+        catalog = (ROOT / "references/navigator/skill-catalog.md").read_text(encoding="utf-8")
+        self.assertIn("Resolution Order", catalog)
+        self.assertIn("Stable alias", catalog)
+        self.assertIn("Manual fallback", catalog)
+
+    def test_skill_catalog_has_availability_boundaries(self):
+        catalog = (ROOT / "references/navigator/skill-catalog.md").read_text(encoding="utf-8")
+        self.assertIn("Availability Discovery Boundaries", catalog)
+        self.assertIn("Not Allowed", catalog)
+        self.assertIn("Auto-run", catalog)
+
+    def test_router_rules_require_one_default(self):
+        rules = (ROOT / "references/navigator/router-rules.md").read_text(encoding="utf-8")
+        self.assertIn("Exactly One Default", rules)
+        self.assertIn("Tie-Break", rules)
+        self.assertIn("earliest unmet", rules)
+
+    def test_router_rules_have_prompt_injection_guard(self):
+        rules = (ROOT / "references/navigator/router-rules.md").read_text(encoding="utf-8")
+        self.assertIn("Prompt Injection Guard", rules)
+        self.assertIn("lifecycle order", rules)
+        self.assertIn("safety boundaries", rules)
+
+    def test_next_step_card_canonical_examples_parseable(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        self.assertGreaterEqual(len(cards), 9, "expected at least 9 canonical card examples")
+
+    def test_all_lifecycle_stages_have_cards(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        stages_found = set()
+        for card in cards:
+            cs = card.get("current_stage")
+            if isinstance(cs, str) and cs in validate_package.LIFECYCLE_STAGES:
+                stages_found.add(cs)
+        for stage in validate_package.LIFECYCLE_STAGES:
+            self.assertIn(stage, stages_found, f"no card for stage: {stage}")
+
+    def test_card_ids_are_unique(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        ids = [str(card.get("id", "")) for card in cards]
+        self.assertEqual(len(ids), len(set(ids)), f"duplicate card IDs: {ids}")
+
+    def test_cards_have_required_fields(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            for field in validate_package.REQUIRED_CARD_FIELDS:
+                self.assertIn(field, card, f"card '{card_id}' missing field: {field}")
+
+    def test_card_stages_are_valid(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            for field in ("current_stage", "target_stage_after_completion"):
+                val = str(card.get(field, ""))
+                self.assertIn(val, validate_package.LIFECYCLE_STAGES,
+                              f"card '{card_id}' has invalid {field}: {val}")
+
+    def test_card_confidence_is_valid(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            conf = str(card.get("confidence", ""))
+            self.assertIn(conf, validate_package.CONFIDENCE_LEVELS,
+                          f"card '{card_id}' has invalid confidence: {conf}")
+
+    def test_card_source_family_is_valid(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            fam = str(card.get("source_family", ""))
+            self.assertIn(fam, validate_package.SOURCE_FAMILIES,
+                          f"card '{card_id}' has invalid source_family: {fam}")
+
+    def test_card_expected_output_non_empty(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            eo = card.get("expected_output")
+            self.assertIsInstance(eo, list, f"card '{card_id}' expected_output not a list")
+            self.assertGreater(len(eo), 0, f"card '{card_id}' expected_output is empty")
+
+    def test_card_fallback_non_empty(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            fb = card.get("fallback_if_missing")
+            self.assertIsInstance(fb, list, f"card '{card_id}' fallback_if_missing not a list")
+            self.assertGreater(len(fb), 0, f"card '{card_id}' fallback_if_missing is empty")
+
+    def test_card_rendering_has_markdown(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            rendering = card.get("rendering")
+            self.assertIsInstance(rendering, list, f"card '{card_id}' rendering not a nested map")
+            has_markdown = any(
+                isinstance(item, dict) and "markdown" in item
+                for item in (rendering or [])
+            )
+            self.assertTrue(has_markdown, f"card '{card_id}' rendering missing 'markdown'")
+
+    def test_recovery_cards_preserve_stage(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        recovery_cards = [c for c in cards if str(c.get("id", "")).startswith("recovery-")]
+        self.assertGreaterEqual(len(recovery_cards), 4, "expected at least 4 recovery cards")
+        for card in recovery_cards:
+            card_id = str(card.get("id", "unknown"))
+            cs = str(card.get("current_stage", ""))
+            ts = str(card.get("target_stage_after_completion", ""))
+            self.assertEqual(cs, ts,
+                             f"recovery card '{card_id}' changes stage: {cs} -> {ts}")
+
+    def test_workspace_state_has_confirmation_semantics(self):
+        ws = (ROOT / "references/navigator/workspace-state.md").read_text(encoding="utf-8")
+        self.assertIn("Confirmation Semantics", ws)
+        self.assertIn("does", ws)
+        self.assertIn("advance", ws)
+        self.assertIn("current_stage", ws)
+        self.assertIn("recovery_needed", ws)
+        self.assertIn("Old-State Migration", ws)
+
+    def test_workspace_state_has_card_status_enum(self):
+        ws = (ROOT / "references/navigator/workspace-state.md").read_text(encoding="utf-8")
+        for status in validate_package.CARD_STATUSES:
+            self.assertIn(status, ws, f"missing card status: {status}")
+
+    def test_skill_md_mentions_navigator_references(self):
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Skill GPS", skill)
+        self.assertIn("next-step card", skill)
+        self.assertIn("references/navigator/lifecycle.md", skill)
+        self.assertIn("references/navigator/next-step-card.md", skill)
+        self.assertIn("routing context", skill)
+        self.assertIn("safety boundaries", skill)
+
+    def test_compatibility_wrappers_delegate(self):
+        for rel in ("references/stage-router.md", "references/skill-selection.md",
+                     "references/handoff-state.md"):
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            self.assertIn("Compatibility Wrapper", text, f"{rel} missing wrapper marker")
+            self.assertIn("navigator/", text, f"{rel} missing delegation to navigator")
+
+    def test_wrappers_no_split_brain(self):
+        for rel in ("references/stage-router.md", "references/skill-selection.md",
+                     "references/handoff-state.md"):
+            text = (ROOT / rel).read_text(encoding="utf-8")
+            for pattern, label in validate_package.WRAPPER_SPLIT_BRAIN_PATTERNS:
+                self.assertNotRegex(text, pattern,
+                                    f"{rel}: split brain — contains {label}")
+
+    def test_pressure_scenarios_include_gate1_scenarios(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        gate1_scenarios = {
+            "AE16": ("Vague Idea to Brainstorm Card", "recommended_role: requirements-discovery"),
+            "AE17": ("Completed Brainstorm to Plan Card", "recommended_role: plan-prep"),
+            "AE18": ("Missing Skill Fallback Card", "fallback_if_missing"),
+            "AE19": ("Post-Compact Card Recovery", "active card"),
+            "AE20": ("Old-State Migration Card", "old state shape"),
+            "AE21": ("Prompt Injection Route Bypass", "earliest unmet"),
+        }
+        for ae_num, (title, keyword) in gate1_scenarios.items():
+            section = scenario_section(scenarios, f"{ae_num}: {title}")
+            self.assertIn(keyword, section, f"{ae_num} missing expected content")
+
+    def test_skill_selection_wrapper_delegates(self):
+        sel = (ROOT / "references/skill-selection.md").read_text(encoding="utf-8")
+        self.assertIn("Compatibility Wrapper", sel)
+        self.assertIn("navigator/skill-catalog.md", sel)
+        self.assertNotIn("Category Choices", sel)
+
+
+
+class ParseCardBlocksTest(unittest.TestCase):
+    """Unit tests for the card block parser in isolation."""
+
+    def test_empty_input(self):
+        cards = validate_package.parse_card_blocks("")
+        self.assertEqual([], cards)
+
+    def test_no_blocks(self):
+        cards = validate_package.parse_card_blocks("# Title\nSome prose\n")
+        self.assertEqual([], cards)
+
+    def test_simple_card(self):
+        text = "```next-step-card\nid: test-1\ncurrent_stage: idea\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(1, len(cards))
+        self.assertEqual("test-1", cards[0]["id"])
+        self.assertEqual("idea", cards[0]["current_stage"])
+
+    def test_unclosed_block_kept(self):
+        text = "```next-step-card\nid: unclosed\ncurrent_stage: idea\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(1, len(cards))
+        self.assertEqual("unclosed", cards[0]["id"])
+
+    def test_list_field(self):
+        text = "```next-step-card\nid: test-2\nexpected_output:\n  - item one\n  - item two\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(["item one", "item two"], cards[0]["expected_output"])
+
+    def test_nested_map_field(self):
+        text = "```next-step-card\nid: test-3\nrendering:\n  markdown: required\n  claude_question: required\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        rendering = cards[0]["rendering"]
+        self.assertIsInstance(rendering, list)
+        found = {k: v for item in rendering if isinstance(item, dict) for k, v in item.items()}
+        self.assertEqual("required", found.get("markdown"))
+
+    def test_multiple_blocks(self):
+        text = "```next-step-card\nid: a\n```\n```next-step-card\nid: b\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(2, len(cards))
+        self.assertEqual("a", cards[0]["id"])
+        self.assertEqual("b", cards[1]["id"])
+
+    def test_empty_value_becomes_list(self):
+        text = "```next-step-card\nid: test-4\nwhy:\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertIsInstance(cards[0]["why"], list)
+        self.assertEqual([], cards[0]["why"])
+
+    def test_value_with_colon(self):
+        text = "```next-step-card\nid: test-5\nwhy: Because: it is needed\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual("Because: it is needed", cards[0]["why"])
+
+    def test_empty_block_not_collected(self):
+        text = "```next-step-card\n\n\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual([], cards, "Empty card block should not produce a card")
+
+    def test_list_inside_nested_map_ignored(self):
+        text = "```next-step-card\nid: test-6\nrendering:\n  markdown: required\n  - stray list item\n```\n"
+        cards = validate_package.parse_card_blocks(text)
+        self.assertEqual(1, len(cards))
+        rendering = cards[0]["rendering"]
+        self.assertIsInstance(rendering, list)
+        # The stray list item is silently ignored (not supported inside nested maps)
+        found = {k: v for item in rendering if isinstance(item, dict) for k, v in item.items()}
+        self.assertEqual("required", found.get("markdown"))
+
+
+class NegativePathValidationTest(unittest.TestCase):
+    """Negative-path tests for navigator validation."""
+
+    def test_missing_navigator_file_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            (tmp_root / "references/navigator/lifecycle.md").unlink()
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("references/navigator/lifecycle.md: missing required file" in i for i in issues))
+
+    def test_missing_card_field_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            cards_file = tmp_root / "references/navigator/next-step-card.md"
+            cards_text = cards_file.read_text(encoding="utf-8")
+            cards_text = cards_text.replace("why: The user has a vague project idea but no accepted scope.", "removed_field: oops")
+            cards_file.write_text(cards_text, encoding="utf-8")
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("missing_field" in i and "why" in i for i in issues))
+
+    def test_invalid_stage_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            cards_file = tmp_root / "references/navigator/next-step-card.md"
+            cards_text = cards_file.read_text(encoding="utf-8")
+            # Replace the id of idea-to-brainstorm to inject an invalid stage
+            cards_text = cards_text.replace(
+                "id: idea-to-brainstorm\ncurrent_stage: idea",
+                "id: idea-to-brainstorm\ncurrent_stage: dreaming",
+            )
+            cards_file.write_text(cards_text, encoding="utf-8")
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("invalid_stage" in i for i in issues),
+                        f"Expected invalid_stage issue. Got: {[i for i in issues if 'stage' in i]}")
+
+    def test_wrapper_split_brain_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            wrapper = tmp_root / "references/stage-router.md"
+            wrapper.write_text(
+                "# Stage Router\n\n| Stage | Signals | Default Skill |\n|---|---|---|\n| Idea | vague | ce-ideate |\n",
+                encoding="utf-8",
+            )
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("wrapper_split_brain" in i for i in issues))
+
+    def test_wrapper_missing_delegation_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            wrapper = tmp_root / "references/stage-router.md"
+            wrapper.write_text("# Stage Router\n\nSome content without navigator delegation.\n", encoding="utf-8")
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("wrapper_split_brain" in i for i in issues))
+
+    def test_empty_routing_trace_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            cards_file = tmp_root / "references/navigator/next-step-card.md"
+            cards_text = cards_file.read_text(encoding="utf-8")
+            cards_text = cards_text.replace(
+                "routing_trace:\n  - no accepted requirements found\n  - earliest unmet lifecycle stage is idea\n  - default role for idea is requirements-discovery",
+                "routing_trace:\n  - lone-item",
+            )
+            cards_file.write_text(cards_text, encoding="utf-8")
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(any("routing_trace" in i and "fewer than 2" in i for i in issues))
 
 
 if __name__ == "__main__":
