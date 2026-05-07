@@ -32,3 +32,5 @@
 - 如果状态明显过期，可以先修复 `state.md` 再路由；如果证据不确定，必须先问用户。
 - 活跃 checkpoint 不能直接恢复；必须先对照 `docs/workflow/log.md` 和最近验证，确认任务没有已经完成。
 - `state.md` 目标 40 行以内，硬上限 60 行。
+
+- 仓库根目录现在就是 Skill 根目录。`SKILL.md`、`references/`、`assets/`、`scripts/`、`agents/` 直接在仓库第一层。取代之前"包目录使用 `skills/csg-workflow/`"的决定。原因：用户 clone 整个仓库到 Skill 目录后 Claude Code 无法识别，因为 Skill 入口文件被嵌套了一层。

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.3.0] - 2026-05-07
+
+### Changed
+
+- Repository root is now the Skill root. `SKILL.md`, `references/`, `assets/`, `scripts/`, and `agents/` live at the top level instead of under `skills/csg-workflow/`. Users can clone the entire repo directly into their Skill directory (`git clone <repo> ~/.claude/skills/csg-workflow`) and it will be recognized immediately.
+- Package validation now checks root-level paths and rejects old nested entries as a regression guard.
+- README, CLAUDE.md, and all runtime references updated to reflect the new layout.
+
 ## [0.0.2.0] - 2026-05-07
 
 ### Added

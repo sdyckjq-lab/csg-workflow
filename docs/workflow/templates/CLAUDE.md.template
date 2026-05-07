@@ -5,5 +5,5 @@
 
 如果本段和本文件其他规则冲突，优先遵守本文件其他项目规则，除非用户明确要求修改。
 
-正式发布模板以 `skills/csg-workflow/assets/templates/CLAUDE.md.block` 为准。
+正式发布模板以 `assets/templates/CLAUDE.md.block` 为准。
 <!-- END CSG-WORKFLOW RULES -->

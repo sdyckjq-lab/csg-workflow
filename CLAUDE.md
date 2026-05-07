@@ -14,21 +14,21 @@ CSG 代表 Compound（主线流程）、Superpowers（工作纪律）、Gstack�
 
 ```bash
 # 验证包结构和内容
-python3 skills/csg-workflow/scripts/validate_package.py
+python3 scripts/validate_package.py
 
 # 运行全部测试
 python3 -m unittest tests/test_csg_workflow_package.py
 
 # 预览规则块变更（只看不写）
-python3 skills/csg-workflow/scripts/apply_rule_block.py --target <文件路径> --template <模板路径>
+python3 scripts/apply_rule_block.py --target <文件路径> --template <模板路径>
 
 # 写入规则块变更（需要 --write 才会真的改文件）
-python3 skills/csg-workflow/scripts/apply_rule_block.py --target <文件路径> --template <模板路径> --write
+python3 scripts/apply_rule_block.py --target <文件路径> --template <模板路径> --write
 ```
 
 ## 架构
 
-Skill 包在 `skills/csg-workflow/`：
+Skill 包在仓库根目录：
 
 - **`SKILL.md`** — 入口文件，包含安全规则。内容短，细节委托给 references。
 - **`references/`** — 阶段路由（stage-router）、Skill 选择（skill-selection）、交接状态（handoff-state）、项目规则处理（project-rules）、缺 Skill 降级（missing-skills）。这些是运行时的决策文档。
@@ -47,7 +47,7 @@ Skill 包在 `skills/csg-workflow/`：
 
 - `AGENTS.md`/`CLAUDE.md` 中的规则块由 `<!-- BEGIN CSG-WORKFLOW RULES -->` 和 `<!-- END CSG-WORKFLOW RULES -->` 包裹。只能修改标记之间的内容。
 - `apply_rule_block.py` 默认只预览不写入，必须加 `--write` 才会实际修改文件。
-- 发布文件中禁止出现：绝对本地路径（`/Users/...`）、file URI、editor URI、TODO/TBD 标记、未完成的中文标记（待补/待定）。验证脚本会扫描 `skills/` 下所有 `.md`、`.yaml`、`.py` 文件。
+- 发布文件中禁止出现：绝对本地路径（`/Users/...`）、file URI、editor URI、TODO/TBD 标记、未完成的中文标记（待补/待定）。验证脚本会扫描根目录下所有 `.md`、`.yaml`、`.py` 文件。
 - 已有的项目规则优先于 CSG 规则，除非用户明确要求覆盖。
 - 第一版不自动安装依赖、不自动执行 Skill、不覆盖用户已有的规则文件。
 - 测试只用 `unittest`，不引入额外依赖。
@@ -62,4 +62,4 @@ Skill 包在 `skills/csg-workflow/`：
 
 - 推送到 GitHub 或任何公开平台时，作者名统一使用 `Kiro`，不要出现真实姓名。
 - 提交内容中不要包含本地绝对路径（如 `/Users/xxx/`），统一使用相对路径。
-- 提交前用 `python3 skills/csg-workflow/scripts/validate_package.py` 检查是否有泄露。
+- 提交前用 `python3 scripts/validate_package.py` 检查是否有泄露。
