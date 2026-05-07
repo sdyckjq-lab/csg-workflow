@@ -77,6 +77,17 @@ LIFECYCLE_STAGES = {
 CARD_STATUSES = {"idle", "proposed", "in_progress", "blocked", "completed", "recovery_needed"}
 CONFIDENCE_LEVELS = {"high", "medium", "low"}
 SOURCE_FAMILIES = {"compound", "superpowers", "gstack", "csg", "manual"}
+STABLE_ALIASES = {
+    "setup-state", "resume-or-clear", "requirements-discovery",
+    "plan-prep", "implementation", "code-review", "qa",
+    "delivery", "post-release-check", "learning-capture",
+    "work-discipline",
+}
+SCALAR_FIELDS = {
+    "id", "current_stage", "target_stage_after_completion", "confidence",
+    "recommended_role", "recommended_skill", "source_family", "why",
+    "user_goal", "prompt",
+}
 
 REQUIRED_CARD_FIELDS = [
     "id",
@@ -225,6 +236,10 @@ def parse_card_blocks(text: str) -> list[dict[str, str | list[str | dict[str, st
                 current_list_key = k
             continue
 
+    # Unclosed block: keep partial data so validator can report issues
+    if in_block and current:
+        cards.append(current)
+
     return cards
 
 
@@ -243,9 +258,9 @@ def validate_cards(issues: list[str], text: str, path: str) -> list[str]:
 
         if card_id in seen_ids:
             issues.append(f"{path}: duplicate_card_id — '{card_id}' appears more than once. Fix: use unique IDs.")
-            continue
-        seen_ids.add(card_id)
-        card_ids.append(card_id)
+        else:
+            seen_ids.add(card_id)
+            card_ids.append(card_id)
 
         # Check required fields
         for field in REQUIRED_CARD_FIELDS:
@@ -267,6 +282,22 @@ def validate_cards(issues: list[str], text: str, path: str) -> list[str]:
         fam = str(card.get("source_family", ""))
         if fam and fam not in SOURCE_FAMILIES:
             issues.append(f"{path}: invalid_source_family — card '{card_id}' has 'source_family: {fam}'. Fix: use one of {sorted(SOURCE_FAMILIES)}.")
+
+        # Validate recommended_role
+        role = str(card.get("recommended_role", ""))
+        if role and role not in STABLE_ALIASES:
+            issues.append(f"{path}: invalid_role — card '{card_id}' has 'recommended_role: {role}'. Fix: use one of {sorted(STABLE_ALIASES)}.")
+
+        # Validate scalar fields are strings, not lists (parser edge case)
+        for sf in SCALAR_FIELDS:
+            val = card.get(sf)
+            if val is not None and isinstance(val, list):
+                issues.append(f"{path}: malformed_card_block — card '{card_id}' field '{sf}' is empty (parsed as list). Fix: provide a value.")
+
+        # Validate routing_trace has at least 2 items
+        rt = card.get("routing_trace")
+        if isinstance(rt, list) and len(rt) < 2:
+            issues.append(f"{path}: missing_field — card '{card_id}' routing_trace has fewer than 2 items. Fix: add 2-4 routing trace bullets.")
 
         # Validate expected_output is non-empty list
         eo = card.get("expected_output")
