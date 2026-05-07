@@ -1,24 +1,28 @@
-# CSG Workflow
+# CSG Workflow — Skill GPS
 
-CSG Workflow is a lightweight Skill for AI coding projects.
+CSG Workflow is a Skill GPS for beginner AI coding projects.
 
-CSG means Compound, Superpowers, and Gstack. The Skill helps a Codex or Claude Code user answer three practical questions:
+CSG means Compound, Superpowers, and Gstack. The Skill helps a Codex or Claude Code user navigate from a rough idea to a working project by answering one question at a time:
 
 - Where is this project right now?
-- Which Skill should I use next?
+- Which Skill should I use next, and why?
+- What prompt should I run, and what output should I expect?
 - How do I continue after compact, clear, or a new session?
+
+The Skill GPS gives you one next-step card per invocation. Each card tells you the current stage, the recommended Skill, a copyable prompt, the expected output, and what state will change. You confirm, move forward one step, and come back for the next card.
 
 ## What The First Version Does
 
-第一版只做四件事：路由、交接、模板、示例。
+第一版是 Skill GPS 的路由层和交接层。
 
 - 判断项目当前阶段。
-- 推荐下一步 Skill，并解释原因。
+- 生成一个 next-step card：包含推荐 Skill、可复制 prompt、预期产物、状态更新。
 - 维护 `docs/workflow/state.md`、`decisions.md`、`log.md`。
 - 安全追加 `AGENTS.md` 和 `CLAUDE.md` 的短规则块。
 - 在缺少 Compound、Superpowers 或 Gstack 某个能力时，给出手动替代步骤。
+- 在 compact、clear 或新对话后安全恢复。
 
-第一版不做插件、不做看板、不自动执行完整流程、不自动安装外部 Skill、不覆盖用户已有规则文件。
+第一版不做插件、不做看板、不自动执行完整流程、不自动安装外部 Skill、不覆盖用户已有规则文件。不做 CLI、installer、arrow-key menu、workflow executor 或自动多 Skill 链。
 
 ## Who This Helps
 
@@ -75,7 +79,14 @@ CSG means Compound, Superpowers, and Gstack. The Skill helps a Codex or Claude C
 csg-workflow/
   SKILL.md
   references/
+    navigator/
+      lifecycle.md
+      skill-catalog.md
+      router-rules.md
+      next-step-card.md
+      workspace-state.md
   assets/templates/
+    cards/next-step.md
   scripts/
   agents/
 examples/minimal-project/
@@ -91,7 +102,7 @@ python3 scripts/validate_package.py
 python3 -m unittest tests/test_csg_workflow_package.py
 ```
 
-验证会检查 Skill 包结构、规则块安全、README 第一屏、最小示例和验收场景。
+验证会检查 Skill 包结构、navigator 文件、next-step card schema、规则块安全、README 第一屏、最小示例和验收场景。
 
 ## License
 
