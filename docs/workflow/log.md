@@ -134,3 +134,17 @@
 - U5: 新增 AE22-AE27 压力场景，验证器范围从 22 扩展到 28，增加 `claude_question` 渲染验证和 12 个 Gate 2 测试。
 - U6: 更新 README、state.md、log.md、decisions.md 为 Gate 2 方向。
 - 验证结果：`validate_package.py` 通过；103 个单元测试通过。
+
+### Gate 2 审查修复
+
+- 消除菜单表三处重复：`router-rules.md` 为唯一规范源，`missing-skills.md` 和 `next-step.md` 改为交叉引用。
+- Recovery 菜单从散文+小写标题转为表格格式+Title Case。
+- `validate_package.py` 新增 `not_now` 非空校验和 rendering 值必须为 `required` 的校验。
+- 术语统一：`primary confirmation experience` 和 `details and fallback`。
+- 文档化 Skip/Stop 标签约定。
+- 验证结果：103 个单元测试通过。
+
+### Gate 2 合并
+
+- PR #6 合并到 main：`gate2-state-card` → `main`。
+- 版本升至 v0.0.5.0。
