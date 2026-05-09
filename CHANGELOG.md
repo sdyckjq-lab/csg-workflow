@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.0.5.0] - 2026-05-09
+
+### Added
+
+- Gate 2 Claude Code Interactive Card: `AskUserQuestion` is now the primary next-step confirmation experience in Claude Code, replacing Markdown `yes/no/skip`. Shows 2-4 options with the recommended action first and beginner-readable labels.
+- Canonical option sets in `router-rules.md`: normal recommendation (4 options), missing Skill (4 options), recovery menus for proposed/in-progress/conflict states.
+- Gate 2 choice semantics in `workspace-state.md`: confirm writes `in_progress`, view details is read-only loop, adjust route regenerates card, skip is terminal.
+- Recovery menu variants as structured tables (Proposed Checkpoint Recovery, In-Progress Checkpoint Recovery, Conflict/Recovery-Needed).
+- Manual fallback state recording in `skill-catalog.md` for missing Skill scenarios.
+- `claude_question` rendering validation in `validate_package.py`: all canonical cards must include both `markdown: required` and `claude_question: required`.
+- `not_now` non-empty validation in `validate_package.py`.
+- Rendering value validation: checks that rendering fields equal `required`.
+- 6 new pressure scenarios (AE22–AE27) covering Gate 2: Claude Code native menu, confirmation semantics, missing Skill fallback, active card recovery, skip/adjust behavior, CLI wording simplification.
+- 12 new Gate2Test methods covering U1–U5 requirements.
+- Skip/Stop label convention documented in `router-rules.md`.
+
+### Changed
+
+- Terminology unified: "primary confirmation experience" and "details and fallback" used consistently across SKILL.md, router-rules.md, next-step-card.md, and next-step.md.
+- Missing-skills.md and next-step.md: menu tables replaced with cross-references to canonical source in router-rules.md, eliminating three-way duplication.
+- `next-step-card.md`: removed renderer-neutral/future-CLI wording. `AskUserQuestion` is the Claude Code primary; Markdown is portable fallback.
+- AE20 pressure scenario: corrected detection rule from `## 下一步卡片` to `## 执行中检查点`.
+- README.md: updated to mention `AskUserQuestion` and "interactive layer" instead of "handoff layer".
+- `validate_package.py`: pressure scenario range extended from 22 to 28.
+
 ## [0.0.4.0] - 2026-05-07
 
 ### Added
