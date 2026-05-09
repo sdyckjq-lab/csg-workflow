@@ -6,6 +6,7 @@ Use this file when csg-workflow runs for the first time, or when the user asks t
 
 - First run: `docs/workflow/state.md` has no `## 依赖状态` section, or `最后检查` is `Not recorded yet`.
 - User explicitly asks to check, install, or update dependencies.
+- Before constructing the `AskUserQuestion` menu when dependency state is absent or stale.
 - Do not check on every run. If state.md already has a dependency section with real data, trust it unless the user requests a re-check.
 
 ## How to Check

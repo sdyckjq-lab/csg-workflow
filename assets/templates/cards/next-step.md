@@ -1,6 +1,6 @@
 # Next-Step Card Template
 
-This template defines the Markdown display hierarchy for next-step cards.
+This template defines the Markdown display hierarchy for next-step cards. In Claude Code, the `AskUserQuestion` menu is the primary confirmation experience; Markdown rendering is the details view and portable fallback.
 
 ## Display Hierarchy
 
@@ -11,16 +11,21 @@ When rendering a next-step card to the user, follow this order:
 3. **Why this is the next move**
 4. **Copyable prompt** or manual instruction
 5. **Expected output**
-6. **Confirmation question**
-7. **Fallback if missing**
-8. **State updates and short routing trace**
-9. **Not-now Skills**
+6. **Fallback if missing**
+7. **State updates and short routing trace**
+8. **Not-now Skills**
 
 The card should feel like guidance, not a schema dump.
 
-## Markdown Rendering
+## Claude Code Primary Experience
 
-Use this format when rendering in Markdown:
+In Claude Code, present the next step through `AskUserQuestion` using the Canonical Option Sets from `references/navigator/router-rules.md`. Show 2-4 options with the recommended action first and beginner-readable labels.
+
+When `AskUserQuestion` is unavailable, use the Markdown rendering below as fallback and add: "Native selection menu unavailable. Using Markdown fallback."
+
+## Markdown Rendering (Fallback/Details)
+
+Use this format when rendering in Markdown or non-Claude-Code environments:
 
 ```markdown
 ## Next Step: {recommended_role}
@@ -36,9 +41,6 @@ Use this format when rendering in Markdown:
 
 ### Expected output
 {expected_output list}
-
-### Confirm?
-Does this look right? (yes / no / skip)
 
 ### Fallback
 {fallback_if_missing list}

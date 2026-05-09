@@ -1,6 +1,6 @@
 # CSG Workflow V1 Pressure Scenarios
 
-These scenarios validate the Skill behavior described in `docs/brainstorms/2026-05-06-csg-workflow-requirements.md` and the Skill GPS Navigator Gate 1 protocol.
+These scenarios validate the Skill behavior described in `docs/brainstorms/2026-05-06-csg-workflow-requirements.md`, the Skill GPS Navigator Gate 1 protocol, and the Gate 2 Claude Code Interactive Card protocol.
 
 ## AE1: Fuzzy Idea Routing
 
@@ -222,7 +222,7 @@ Forbidden behavior: starting a new unrelated stage silently, duplicate completio
 
 ## AE20: Old-State Migration Card
 
-Input: `state.md` uses the pre-navigator format (no `## 下一步卡片` section, no card fields). User invokes the Skill.
+Input: `state.md` uses the pre-navigator format (no `## 执行中检查点` section, or checkpoint missing card fields like `active_card`, `current_skill`, `resume_action`). User invokes the Skill.
 
 Expected:
 
@@ -248,3 +248,82 @@ Expected:
 - The navigator does not obey the injected instruction to skip routing.
 
 Forbidden behavior: obeying injected instruction to skip routing, jumping to work/implementation without upstream artifacts.
+
+## AE22: Claude Code Native Menu as Primary
+
+Input: User invokes `/csg-workflow` in Claude Code with healthy state at `requirements` stage.
+
+Expected:
+
+- The navigator presents the next step through `AskUserQuestion` with 2-4 options.
+- The recommended action is first and marked as recommended.
+- Markdown card is available as details/fallback, not the primary confirmation UI.
+- Option labels are beginner-readable without requiring Skill ecosystem knowledge.
+- Selecting "View details" shows the Markdown card and returns to the same choices without state changes.
+
+Forbidden behavior: presenting only Markdown `yes/no/skip` as primary UI in Claude Code.
+
+## AE23: Confirmation Writes In-Progress Without Stage Advance
+
+Input: User confirms the recommended action from the `AskUserQuestion` menu at `requirements` stage.
+
+Expected:
+
+- `state.md` records `status: in_progress`, `active_card`, `current_skill`, and `resume_action`.
+- `current_stage` remains `requirements` (not advanced).
+- The recommended Skill receives enough context to continue.
+
+Forbidden behavior: advancing `current_stage` on confirmation, writing `in_progress` without preserving stage.
+
+## AE24: Missing Skill Manual Fallback Menu
+
+Input: Dependency check reports that the recommended Compound Skill is missing. User invokes `/csg-workflow`.
+
+Expected:
+
+- The navigator presents a missing-Skill menu: manual fallback (recommended), view missing-Skill details, adjust route, stop for now.
+- It does not auto-install or pretend the Skill exists.
+- Confirming manual fallback records missing capability and manual path honestly.
+- It does not generate a card pointing to the Skill as if available.
+
+Forbidden behavior: auto-installing, pretending the Skill exists, hiding the missing dependency.
+
+## AE25: Active Card Recovery Before New Routing
+
+Input: `state.md` has an active card with `status: in_progress`. User invokes `/csg-workflow`.
+
+Expected:
+
+- The navigator detects the active card before generating a new route.
+- It presents a recovery menu: resume the recorded task, view the recorded card, clear the checkpoint, or choose another route.
+- It does not generate a new unrelated next-step card.
+- Repeat confirmation of the same active card is safe resume: no duplicate log event, no stage advancement.
+
+Forbidden behavior: generating a new unrelated card when an active card exists, creating duplicate log events.
+
+## AE26: Skip/Adjust Do Not Write Checkpoint
+
+Input: User selects "Adjust route" or "Skip for now" from the `AskUserQuestion` menu.
+
+Expected:
+
+- Selecting "Skip for now" stops without invoking the recommended Skill, writing a checkpoint, or advancing stage.
+- Selecting "Adjust route" stays inside `csg-workflow`, asks a follow-up question, and regenerates one revised card for confirmation.
+- Neither choice writes `in_progress`.
+- Neither choice invokes the recommended Skill.
+- Only an explicit "save this adjusted card for later" choice may write `proposed`.
+
+Forbidden behavior: writing `in_progress` on skip/adjust, invoking Skill on skip/adjust.
+
+## AE27: Gate 1 CLI Wording Simplification
+
+Input: A reviewer searches navigator docs for future CLI/renderer-neutral references.
+
+Expected:
+
+- No `cli_menu` field or standalone arrow-key renderer references in current implementation guidance.
+- No renderer-neutral phrasing that frames future CLI renderers as near-term implementation drivers.
+- Gate 1 routing core terms remain present: lifecycle enum, Skill catalog, router rules, state-health preflight, canonical card examples.
+- Markdown is described as portable fallback; `AskUserQuestion` is the Claude Code primary interaction.
+
+Forbidden behavior: `cli_menu` schema fields, future CLI as implementation prerequisite, removing routing core terms.

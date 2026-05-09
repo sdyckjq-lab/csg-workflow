@@ -831,6 +831,106 @@ class NavigatorTest(unittest.TestCase):
         self.assertNotIn("Category Choices", sel)
 
 
+class Gate2Test(unittest.TestCase):
+    """Tests for the Gate 2 Claude Code Interactive Card protocol."""
+
+    def test_skill_md_mentions_ask_user_question(self):
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("AskUserQuestion", skill)
+        self.assertIn("2-4 options", skill)
+        self.assertIn("recommended action first", skill)
+
+    def test_router_rules_have_ask_user_question_contract(self):
+        rules = (ROOT / "references/navigator/router-rules.md").read_text(encoding="utf-8")
+        self.assertIn("AskUserQuestion Menu Contract", rules)
+        self.assertIn("Canonical Option Sets", rules)
+        self.assertIn("View-Details Loop", rules)
+        self.assertIn("Fallback When AskUserQuestion Is Unavailable", rules)
+
+    def test_workspace_state_has_gate2_choice_semantics(self):
+        ws = (ROOT / "references/navigator/workspace-state.md").read_text(encoding="utf-8")
+        self.assertIn("Gate 2 Choice Semantics", ws)
+        self.assertIn("Confirm recommended action", ws)
+        self.assertIn("View details", ws)
+        self.assertIn("Adjust route", ws)
+        self.assertIn("Skip for now", ws)
+
+    def test_missing_skills_has_gate2_menu(self):
+        ms = (ROOT / "references/missing-skills.md").read_text(encoding="utf-8")
+        self.assertIn("Gate 2 Missing Skill Menu", ms)
+        self.assertIn("manual fallback", ms)
+        self.assertIn("references/navigator/router-rules.md", ms)
+
+    def test_card_template_mentions_ask_user_question(self):
+        tmpl = (ROOT / "assets/templates/cards/next-step.md").read_text(encoding="utf-8")
+        self.assertIn("AskUserQuestion", tmpl)
+        self.assertIn("Fallback", tmpl)
+        self.assertNotIn("yes / no / skip", tmpl)
+
+    def test_renderer_rules_no_future_cli(self):
+        card_doc = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        # "cli_menu" may appear in prohibition context ("no cli_menu"), which is fine
+        self.assertNotRegex(card_doc, r"(?<!no\s`)cli_menu\s*:")
+        self.assertNotIn("renderer-neutral", card_doc)
+        self.assertIn("AskUserQuestion", card_doc)
+
+    def test_canonical_cards_have_claude_question_rendering(self):
+        cards_file = (ROOT / "references/navigator/next-step-card.md").read_text(encoding="utf-8")
+        cards = validate_package.parse_card_blocks(cards_file)
+        for card in cards:
+            card_id = str(card.get("id", "unknown"))
+            rendering = card.get("rendering")
+            self.assertIsInstance(rendering, list, f"card '{card_id}' rendering not a nested map")
+            has_claude_q = any(
+                isinstance(item, dict) and "claude_question" in item
+                for item in (rendering or [])
+            )
+            self.assertTrue(has_claude_q, f"card '{card_id}' rendering missing 'claude_question'")
+
+    def test_recovery_menu_variants_in_workspace_state(self):
+        ws = (ROOT / "references/navigator/workspace-state.md").read_text(encoding="utf-8")
+        self.assertIn("Proposed Checkpoint Recovery", ws)
+        self.assertIn("In-Progress Checkpoint Recovery", ws)
+        self.assertIn("Conflict / Recovery-Needed", ws)
+
+    def test_skill_catalog_has_manual_fallback_recording(self):
+        cat = (ROOT / "references/navigator/skill-catalog.md").read_text(encoding="utf-8")
+        self.assertIn("Manual Fallback State Recording", cat)
+        self.assertIn("manual/fallback-based", cat)
+
+    def test_dependency_setup_mentions_pre_menu_check(self):
+        deps = (ROOT / "references/dependency-setup.md").read_text(encoding="utf-8")
+        self.assertIn("Before constructing", deps)
+
+    def test_gate2_pressure_scenarios_present(self):
+        scenarios = (ROOT / "tests/pressure-scenarios/csg-workflow-v1.md").read_text(encoding="utf-8")
+        gate2_scenarios = {
+            "AE22": ("Claude Code Native Menu as Primary", "AskUserQuestion"),
+            "AE23": ("Confirmation Writes In-Progress Without Stage Advance", "in_progress"),
+            "AE24": ("Missing Skill Manual Fallback Menu", "manual fallback"),
+            "AE25": ("Active Card Recovery Before New Routing", "recovery menu"),
+            "AE26": ("Skip/Adjust Do Not Write Checkpoint", "Skip for now"),
+            "AE27": ("Gate 1 CLI Wording Simplification", "cli_menu"),
+        }
+        for ae_num, (title, keyword) in gate2_scenarios.items():
+            section = scenario_section(scenarios, f"{ae_num}: {title}")
+            self.assertIn(keyword, section, f"{ae_num} missing expected content: {keyword}")
+
+    def test_validator_catches_missing_claude_question(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            _copy_skill_tree(ROOT, tmp_root)
+            cards_file = tmp_root / "references/navigator/next-step-card.md"
+            cards_text = cards_file.read_text(encoding="utf-8")
+            cards_text = cards_text.replace("claude_question: required", "claude_question_removed: oops")
+            cards_file.write_text(cards_text, encoding="utf-8")
+            issues = validate_package.validate(tmp_root)
+        self.assertTrue(
+            any("claude_question" in i for i in issues),
+            f"Expected claude_question validation issue. Got: {[i for i in issues if 'claude' in i.lower()]}",
+        )
+
+
 
 class ParseCardBlocksTest(unittest.TestCase):
     """Unit tests for the card block parser in isolation."""
