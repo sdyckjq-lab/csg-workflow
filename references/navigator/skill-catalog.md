@@ -29,6 +29,14 @@ Default Skill: ce-brainstorm
 
 If a concrete Skill is unavailable, the card keeps the alias and switches to fallback instructions.
 
+### Manual Fallback State Recording
+
+When a user confirms manual fallback:
+- Record the intended stable alias and concrete Skill name in `state.md`.
+- Note that execution is manual/fallback-based.
+- Do not write `in_progress` until the user explicitly confirms the manual route.
+- Future recovery should see the missing capability honestly, not pretend an unavailable Skill ran.
+
 ## Resolution Order
 
 When resolving a stable alias to an actionable Skill recommendation:

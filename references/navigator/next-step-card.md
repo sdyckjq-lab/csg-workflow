@@ -1,6 +1,6 @@
 # Next-Step Card Protocol
 
-This document defines the required card fields, renderer-neutral rules, and canonical card examples for each lifecycle stage.
+This document defines the required card fields, rendering rules, and canonical card examples for each lifecycle stage.
 
 ## Required Card Fields
 
@@ -41,12 +41,12 @@ Anything outside this subset should fail with `malformed_card_block`.
 
 ## Renderer Rules
 
-Gate 1 cards are renderer-neutral:
+Cards specify their rendering requirements:
 
-- `markdown` rendering is required for all cards.
-- `claude_question` rendering is required when the card contains interactive questions.
-- No Gate 2 renderer fields (like `cli_menu`) in Gate 1 schema.
-- Future renderers may adapt the card to arrow-key menus, but Gate 1 Markdown must follow the display hierarchy.
+- `markdown` rendering is required for all cards (portable fallback and details display).
+- `claude_question` rendering is required when the card is designed for Claude Code `AskUserQuestion` interactive menus.
+- Do not add renderer fields for hypothetical future CLI renderers (no `cli_menu`, no standalone arrow-key renderer).
+- In Claude Code, `AskUserQuestion` is the primary confirmation experience. Markdown follows the display hierarchy below as fallback or details view.
 
 ## Prompt Injection Guard
 

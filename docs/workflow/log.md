@@ -108,3 +108,29 @@
 - 更新 README.md 为 Skill GPS 产品定位。
 - 同步 CEO 审查决策到 decisions.md。
 - 验证结果：包验证通过；74 个单元测试全部通过。
+
+## 2026-05-08 Gate 2 Claude Code Interactive Card
+
+### Gate 2 需求纠偏
+
+- 初版 Gate 2 曾误收敛到本地终端版 Skill GPS，包括 `csg start`、终端菜单和 `csg package`；该方向已废弃。
+- 用户明确确认目标体验就是 Claude Code 原生 `AskUserQuestion`：上下箭头选择、回车确认，不要在 `csg-workflow` 中重复造轮子。
+- 新需求文档改为：`docs/brainstorms/2026-05-08-gate-2-claude-code-interactive-card-requirements.md`。
+- Gate 2 范围收窄为：调用 `AskUserQuestion` 展示少量下一步选项、确认后更新 active card 状态、保留 Markdown fallback、精简 Gate 1 中未来 CLI 相关措辞。
+- 下一步：使用 `ce-plan` 制定 AskUserQuestion 集成和 Gate 1 精简的实施计划。
+
+### Gate 2 实施计划
+
+- 产出实施计划：`docs/plans/2026-05-08-001-feat-claude-code-interactive-card-plan.md`。
+- 计划拆为 6 个实施单元：U1 Claude Code 交互合约、U2 确认/恢复/调整状态语义、U3 缺失 Skill 和不可用问题 fallback、U4 Gate 1 未来 CLI 措辞精简、U5 Gate 2 压力场景和验证器覆盖、U6 用户文档和工作流交接。
+- 两轮文档审查后修正了 schema 稳定性表述、U4/U6 文件归属、Adjust Route 流程、AE22-AE27 编号和 fallback 流程图。
+
+### Gate 2 实现
+
+- U1: 更新 `SKILL.md`、`router-rules.md`、`next-step-card.md`、`assets/templates/cards/next-step.md`，定义 `AskUserQuestion` 菜单合约为 Claude Code 主体验。
+- U2: 更新 `workspace-state.md` 增加 Gate 2 选择语义（确认写 in_progress、view details 只读循环、adjust route 重新生成、skip 终止），增加 proposed/in_progress/conflict 三种恢复菜单变体。
+- U3: 更新 `missing-skills.md`、`dependency-setup.md`、`skill-catalog.md` 定义缺失 Skill 菜单、手动 fallback 状态记录、`AskUserQuestion` 不可用 fallback 格式。
+- U4: 去掉 `next-step-card.md` 中 renderer-neutral/future CLI 措辞，保留安全约束。
+- U5: 新增 AE22-AE27 压力场景，验证器范围从 22 扩展到 28，增加 `claude_question` 渲染验证和 12 个 Gate 2 测试。
+- U6: 更新 README、state.md、log.md、decisions.md 为 Gate 2 方向。
+- 验证结果：`validate_package.py` 通过；103 个单元测试通过。

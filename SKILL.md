@@ -16,7 +16,7 @@ description: Use when a Codex or Claude Code user needs to start, resume, or adv
 3. If state.md has no `## 依赖状态` section, or if `最后检查` is `Not recorded yet`, run `scripts/check_dependencies.py` and follow `references/dependency-setup.md`.
 4. Determine the current stage using `references/navigator/lifecycle.md`. Look up the Skill catalog in `references/navigator/skill-catalog.md`. Apply routing rules from `references/navigator/router-rules.md`.
 5. Generate one next-step card using `references/navigator/next-step-card.md` and `assets/templates/cards/next-step.md`.
-6. Emit the card and ask the user for confirmation before invoking, prompting, or routing into the recommended Skill.
+6. Ask the user for confirmation using Claude Code `AskUserQuestion` (2-4 options, recommended action first) when available. If `AskUserQuestion` is unavailable, use Markdown/text fallback and explicitly state it is fallback. Emit the Markdown card as details and fallback, not the primary confirmation experience.
 
 在完成以上步骤之前，**不得**：
 
@@ -32,6 +32,7 @@ V1 does:
 
 - Diagnose the project stage and emit one next-step card per invocation.
 - Recommend exactly one default Skill with a copyable prompt.
+- In Claude Code, present the next step through `AskUserQuestion` with 2-4 options (recommended first, beginner-readable labels). Fall back to Markdown/text confirmation when `AskUserQuestion` is unavailable.
 - Ask before moving into another Skill.
 - Create or update lightweight handoff files.
 - Safely add short `AGENTS.md` and `CLAUDE.md` rule blocks when the user asks.
@@ -43,7 +44,7 @@ V1 does not:
 - Auto-install Compound, Superpowers, or Gstack.
 - Auto-run the full idea-to-ship workflow or multi-Skill chains.
 - Replace any existing Skill.
-- Create a CLI, installer, arrow-key menu, dashboard, or workflow executor.
+- Create a CLI, installer, custom terminal menu, dashboard, or workflow executor.
 - Overwrite user-owned project rules.
 
 ## 路由完成后

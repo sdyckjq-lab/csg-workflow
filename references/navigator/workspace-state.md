@@ -25,13 +25,79 @@ Gate 1 uses this exact card status enum in state updates:
 
 ## Confirmation Semantics
 
-- **Emitting a card** sets status to `proposed` when state is updated before confirmation.
-- **User confirmation** sets status to `in_progress` and records `active_card`.
+- **Displaying an `AskUserQuestion` menu** does not write state. Unconfirmed menus are ephemeral by default.
+- **User confirmation of the recommended action** sets status to `in_progress` and records `active_card`. This is the only normal path that writes `in_progress`.
 - Confirmation does **not** advance `current_stage`.
 - **Successful expected output** or user-confirmed equivalent completion sets status to `idle` or `completed` and advances `current_stage` to `target_stage_after_completion`.
 - **Ambiguous or conflicting evidence** sets status to `recovery_needed`, emits a recovery card, and preserves the last trustworthy project stage.
 - **Re-confirming the same `active_card`** while status is `in_progress` is a safe resume: re-show or resume the card, do not append a duplicate log event, do not advance the stage.
 - A repeated confirmation only creates a new event if the user explicitly discards the old checkpoint and starts a new card.
+
+## Gate 2 Choice Semantics
+
+Each `AskUserQuestion` menu choice has explicit state behavior:
+
+### Confirm recommended action
+- Write `status: in_progress`, `active_card`, `current_skill`, `resume_action`.
+- Preserve `current_stage` (do not advance).
+- Then invoke or hand off to the recommended Skill.
+
+### View details
+- Show the full Markdown card.
+- Return to the same `AskUserQuestion` choices.
+- Do not write state or change status.
+
+### Adjust route
+- Stay inside `csg-workflow`; do not invoke any Skill.
+- Ask one follow-up question: change the goal, pick a different lifecycle stage, or provide free-text direction.
+- Generate one revised card and ask for confirmation again.
+- Only an explicit "save this adjusted card for later" choice may write `status: proposed`. It must not call the recommended Skill or write `in_progress`.
+
+### Skip for now
+- Do not call the recommended Skill.
+- Do not write a checkpoint.
+- Leave existing state unchanged.
+
+## Recovery Menu Variants
+
+### Proposed Checkpoint Recovery
+
+When an existing checkpoint has `status: proposed`:
+
+| # | Label | Description |
+|---|-------|-------------|
+| 1 | Confirm this recommendation (Recommended) | Re-show the pending card and begin this step. |
+| 2 | View details | Show the full Markdown card. |
+| 3 | Adjust route | Change the goal or pick a different stage. |
+| 4 | Stop for now | Stop without writing a checkpoint. |
+
+Treat as compatibility/recovery input, not a new Gate 2 write path.
+
+### In-Progress Checkpoint Recovery
+
+When an existing checkpoint has `status: in_progress`:
+
+| # | Label | Description |
+|---|-------|-------------|
+| 1 | Resume the recorded task (Recommended) | Continue the active checkpoint. |
+| 2 | View the recorded card | Show the current card details. |
+| 3 | Clear the checkpoint | Remove active checkpoint without advancing stage. |
+| 4 | Choose another route | Generate a new card instead. |
+
+Do not generate a new unrelated next-step card.
+
+### Conflict / Recovery-Needed
+
+When state evidence conflicts:
+
+| # | Label | Description |
+|---|-------|-------------|
+| 1 | View conflict summary | Show what evidence conflicts. |
+| 2 | Keep and resume checkpoint (Recommended) | Continue the existing checkpoint. |
+| 3 | Clear checkpoint and re-route | Remove checkpoint and generate a fresh card. |
+| 4 | Stop for manual handling | Let the user resolve manually. |
+
+Clear confirmation wording required before clearing: clearing removes only the active checkpoint, does not delete log history, does not advance stage.
 
 ## Old-State Migration
 
@@ -39,7 +105,7 @@ Gate 1 handles old-state migration at the document/protocol level, not through a
 
 Detection rules:
 
-- If `state.md` lacks `## 下一步卡片` section or card-style fields, it uses the pre-navigator shape.
+- If `state.md` lacks `## 执行中检查点` section or the checkpoint is missing card-style fields (active_card, current_skill, resume_action), it may be pre-navigator or incomplete.
 - Preserve existing stage, Skill, next action, checkpoint, verification, and dependency status when possible.
 - Generate a `recovery` card when fields are missing or evidence conflicts.
 - Ask the user to choose the source of truth when migration is ambiguous.

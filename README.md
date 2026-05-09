@@ -9,20 +9,21 @@ CSG means Compound, Superpowers, and Gstack. The Skill helps a Codex or Claude C
 - What prompt should I run, and what output should I expect?
 - How do I continue after compact, clear, or a new session?
 
-The Skill GPS gives you one next-step card per invocation. Each card tells you the current stage, the recommended Skill, a copyable prompt, the expected output, and what state will change. You confirm, move forward one step, and come back for the next card.
+The Skill GPS gives you one next-step card per invocation. In Claude Code, it presents the next step through the built-in selection menu (`AskUserQuestion`) with 2-4 clear options — recommended action first. You pick one, confirm, and come back for the next card. In other environments, it falls back to Markdown confirmation.
 
 ## What The First Version Does
 
-第一版是 Skill GPS 的路由层和交接层。
+第一版是 Skill GPS 的路由层和交互层。
 
 - 判断项目当前阶段。
+- 在 Claude Code 中通过 `AskUserQuestion` 原生选择菜单展示下一步（2-4 个选项，推荐动作排第一）。
 - 生成一个 next-step card：包含推荐 Skill、可复制 prompt、预期产物、状态更新。
 - 维护 `docs/workflow/state.md`、`decisions.md`、`log.md`。
 - 安全追加 `AGENTS.md` 和 `CLAUDE.md` 的短规则块。
 - 在缺少 Compound、Superpowers 或 Gstack 某个能力时，给出手动替代步骤。
 - 在 compact、clear 或新对话后安全恢复。
 
-第一版不做插件、不做看板、不自动执行完整流程、不自动安装外部 Skill、不覆盖用户已有规则文件。不做 CLI、installer、arrow-key menu、workflow executor 或自动多 Skill 链。
+第一版不做插件、不做看板、不自动执行完整流程、不自动安装外部 Skill、不覆盖用户已有规则文件。不做 CLI、installer、custom terminal menu、workflow executor 或自动多 Skill 链。
 
 ## Who This Helps
 

@@ -343,7 +343,12 @@ def validate_cards(issues: list[str], text: str, path: str) -> tuple[list[str], 
         else:
             issues.append(f"{path}: missing_field — card '{card_id}' missing 'fallback_if_missing'.")
 
-        # Validate rendering has markdown
+        # Validate not_now is non-empty (spec: "list, can be empty only with an explicit reason")
+        nn = card.get("not_now")
+        if isinstance(nn, list) and len(nn) == 0:
+            issues.append(f"{path}: missing_field — card '{card_id}' has empty not_now. Fix: add at least one item or an explicit reason.")
+
+        # Validate rendering has markdown and claude_question with value 'required'
         rendering = card.get("rendering")
         if isinstance(rendering, list):
             has_markdown = any(
@@ -352,6 +357,18 @@ def validate_cards(issues: list[str], text: str, path: str) -> tuple[list[str], 
             )
             if not has_markdown:
                 issues.append(f"{path}: missing_nested_key — card '{card_id}' rendering missing 'markdown'. Fix: add 'markdown: required'.")
+            has_claude_q = any(
+                isinstance(item, dict) and "claude_question" in item
+                for item in rendering
+            )
+            if not has_claude_q:
+                issues.append(f"{path}: missing_nested_key — card '{card_id}' rendering missing 'claude_question'. Fix: add 'claude_question: required'.")
+            # Validate rendering values are 'required'
+            for item in rendering:
+                if isinstance(item, dict):
+                    for k, v in item.items():
+                        if v != "required":
+                            issues.append(f"{path}: invalid_rendering_value — card '{card_id}' rendering '{k}: {v}'. Fix: use 'required'.")
 
     return card_ids, cards
 
@@ -388,7 +405,8 @@ def validate_navigator(issues: list[str], root: Path) -> None:
         require_contains(issues, text, "references/navigator/router-rules.md",
                          ["Exactly One Default", "Confidence", "Tie-Break",
                           "Confirmation Boundary", "Prompt Injection Guard",
-                          "lifecycle order", "confirmation rules", "safety boundaries"])
+                          "lifecycle order", "confirmation rules", "safety boundaries",
+                          "AskUserQuestion"])
 
     # next-step-card.md — parse and validate all cards
     path = root / "references/navigator/next-step-card.md"
@@ -418,7 +436,7 @@ def validate_navigator(issues: list[str], root: Path) -> None:
                          ["State-Health Preflight", "Card Status Enum",
                           "Confirmation Semantics", "Old-State Migration",
                           "Recovery-Mode", "Post-compact", "Repeat confirmation",
-                          "Conflicting evidence"])
+                          "Conflicting evidence", "Gate 2 Choice Semantics"])
         # Check status enum values
         for status in CARD_STATUSES:
             if status not in text:
@@ -432,7 +450,8 @@ def validate_card_template(issues: list[str], root: Path) -> None:
         text = read_text(path)
         require_contains(issues, text, "assets/templates/cards/next-step.md",
                          ["Display Hierarchy", "next-step-card", "recommended_role",
-                          "current_stage", "target_stage_after_completion"])
+                          "current_stage", "target_stage_after_completion",
+                          "AskUserQuestion"])
 
 
 def validate_wrappers(issues: list[str], root: Path) -> None:
@@ -487,6 +506,7 @@ def validate_skill_md(issues: list[str], root: Path) -> None:
             "references/navigator/workspace-state.md",
             "routing context",
             "safety boundaries",
+            "AskUserQuestion",
         ],
     )
 
@@ -631,7 +651,7 @@ def validate(root: Path) -> list[str]:
     scenarios_path = root / "tests/pressure-scenarios/csg-workflow-v1.md"
     if scenarios_path.is_file():
         scenarios = read_text(scenarios_path)
-        for index in range(1, 22):
+        for index in range(1, 28):
             if not re.search(rf"^## AE{index}:", scenarios, re.MULTILINE):
                 issues.append(f"tests/pressure-scenarios/csg-workflow-v1.md: missing AE{index}")
 

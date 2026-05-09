@@ -43,3 +43,16 @@ When a fallback is used, add a short note:
 - Missing capability.
 - Manual fallback chosen.
 - Verification still required before stage completion.
+
+## Gate 2 Missing Skill Menu
+
+When the recommended Skill is missing, present the Missing Skill menu defined in `references/navigator/router-rules.md` (Canonical Option Sets).
+
+Only confirming manual fallback writes `in_progress`. It must record:
+- The intended role and Skill name.
+- That execution is manual/fallback-based.
+- The manual fallback instructions being followed.
+
+Do not auto-install, do not pretend the Skill exists, do not generate a card pointing to the Skill as if available.
+
+When `AskUserQuestion` is unavailable, follow the Markdown fallback rules in `references/navigator/router-rules.md`.

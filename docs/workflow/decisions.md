@@ -56,3 +56,11 @@
 - Gate 1 recovery 示例上限为 4 个：post-compact active-card recovery、old-state migration、repeat confirmation、conflicting evidence。其他降级状态类延后。
 - 简化约束：每一条新增的规则、字段、状态更新和校验检查都必须减少初学者的选择负担。如果某个细节只是让内部系统更完整但不让用户的下一步更平静、安全、清晰，则延后到 Gate 2 或删除。
 - Gate 1 不做 CLI、installer、arrow-key menu、renderer script、workflow executor、自动多 Skill 链、dashboard、database、包分发。
+
+## 2026-05-08 Gate 2 Claude Code Interactive Card 决策
+
+- Gate 2 第一版定位为 Claude Code 内的交互式 Skill GPS：复用 `AskUserQuestion` 展示下一步选择，让用户用上下箭头选择、回车确认。
+- `csg-workflow` 不实现 `csg start`、自研终端箭头菜单、`csg package`、`csg install`、全局命令或 clean Skill package generator。
+- Gate 2 的核心价值是阶段判断、少量清晰选项、确认后的状态更新、后续 Skill 交接 prompt 和安全恢复。
+- 确认菜单选项只表示用户接受下一步路线；阶段推进仍必须依赖预期产物、验证记录或用户确认等价完成。
+- Gate 1 的 lifecycle、Skill catalog、router rules、state-health 继续保留；面向未来 CLI 或 renderer-neutral 的表述应降级，不牵引当前实现范围。
